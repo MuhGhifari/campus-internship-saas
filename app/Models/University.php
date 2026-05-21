@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class University extends Model
@@ -14,13 +15,15 @@ class University extends Model
         return $this->hasMany(User::class);
     }
 
-    public function companies(): HasMany
+    public function partneredCompanies(): BelongsToMany
     {
-        return $this->hasMany(Company::class);
+        return $this->belongsToMany(Company::class, 'company_partnerships')
+            ->withPivot(['status', 'pesan', 'catatan_review', 'reviewed_at'])
+            ->withTimestamps();
     }
 
-    public function offers(): HasMany
+    public function offerRequests(): HasMany
     {
-        return $this->hasMany(InternshipOffer::class);
+        return $this->hasMany(InternshipOfferUniversity::class);
     }
 }

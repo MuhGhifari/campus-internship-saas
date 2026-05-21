@@ -4,12 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class InternshipOffer extends Model
 {
     protected $fillable = [
-        'university_id',
         'company_id',
         'created_by',
         'judul',
@@ -35,9 +35,16 @@ class InternshipOffer extends Model
         ];
     }
 
-    public function university(): BelongsTo
+    public function universities(): BelongsToMany
     {
-        return $this->belongsTo(University::class);
+        return $this->belongsToMany(University::class, 'internship_offer_universities')
+            ->withPivot(['status', 'catatan_review', 'reviewed_at'])
+            ->withTimestamps();
+    }
+
+    public function universityRequests(): HasMany
+    {
+        return $this->hasMany(InternshipOfferUniversity::class);
     }
 
     public function company(): BelongsTo

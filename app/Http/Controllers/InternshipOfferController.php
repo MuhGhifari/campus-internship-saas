@@ -2,63 +2,192 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Company;
+use App\Models\CompanyPartnership;
+use App\Models\InternshipOffer;
+use App\Models\InternshipOfferUniversity;
+use App\Models\University;
+use App\Models\User;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\View\View;
 
 class InternshipOfferController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
-    public function index()
+    public function index(Request $request): View
     {
-        //
+        $user = $request->user();
+
+        return view('offers.index', [
+            'offers' => InternshipOffer::with(['company', 'applications', 'universityRequests.university'])
+                ->when($user->hasRole('mahasiswa'), fn ($query) => $query->whereHas('universityRequests', fn ($request) => $request
+                    ->where('university_id', $user->university_id)
+                    ->where('status', 'diterima')))
+                ->when($user->hasRole('staf'), fn ($query) => $query->whereHas('universityRequests', fn ($request) => $request
+                    ->where('university_id', $user->university_id)))
+                ->when($user->hasRole('perusahaan'), fn ($query) => $query->where('company_id', $user->company_id))
+                ->when($request->filled('status'), fn ($query) => $query->where('status', $request->status))
+                ->latest()
+                ->paginate(9),
+        ]);
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
+    public function create(Request $request): View
     {
-        //
+        abort_unless($request->user()->hasRole('staf') || $request->user()->hasRole('perusahaan'), 403);
+
+        return view('offers.create', $this->formData($request));
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function store(Request $request): RedirectResponse
     {
-        //
+        abort_unless($request->user()->hasRole('staf') || $request->user()->hasRole('perusahaan'), 403);
+
+        $attributes = $this->validatedOffer($request);
+        $user = $request->user();
+
+        $offer = InternshipOffer::create([
+            ...$attributes,
+            'company_id' => $user->company_id ?: $attributes['company_id'],
+            'created_by' => $user->id,
+            'status' => $user->hasRole('perusahaan') ? 'menunggu' : $attributes['status'],
+        ]);
+
+        $this->syncUniversityRequests($offer, $request, $user);
+
+        return redirect()->route('offers.show', $offer)->with('success', 'Lowongan magang berhasil dibuat dan dikirim ke universitas tujuan.');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    public function show(Request $request, InternshipOffer $offer): View
     {
-        //
+        $user = $request->user();
+        abort_unless(
+            ($user->hasRole('perusahaan') && $offer->company_id === $user->company_id) ||
+            ($user->hasRole('staf') && $offer->universityRequests()->where('university_id', $user->university_id)->exists()) ||
+            ($user->hasRole('mahasiswa') && $offer->universityRequests()->where('university_id', $user->university_id)->where('status', 'diterima')->exists()),
+            403
+        );
+
+        return view('offers.show', [
+            'offer' => $offer->load(['company', 'applications.student', 'applications.campusSupervisor', 'universityRequests.university']),
+            'lecturers' => User::where('university_id', $request->user()->university_id)->where('role', 'dosen')->orderBy('name')->get(),
+            'companySupervisors' => User::where('company_id', $offer->company_id)->where('role', 'perusahaan')->orderBy('name')->get(),
+        ]);
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(string $id)
+    public function edit(Request $request, InternshipOffer $offer): View
     {
-        //
+        abort_unless($request->user()->hasRole('staf') || ($request->user()->hasRole('perusahaan') && $request->user()->company_id === $offer->company_id), 403);
+
+        return view('offers.edit', [
+            'offer' => $offer,
+            ...$this->formData($request, $offer),
+        ]);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, string $id)
+    public function update(Request $request, InternshipOffer $offer): RedirectResponse
     {
-        //
+        abort_unless($request->user()->hasRole('staf') || ($request->user()->hasRole('perusahaan') && $request->user()->company_id === $offer->company_id), 403);
+
+        $attributes = $this->validatedOffer($request);
+
+        if ($request->user()->hasRole('perusahaan')) {
+            $attributes['company_id'] = $request->user()->company_id;
+            $attributes['status'] = 'menunggu';
+        }
+
+        $offer->update($attributes);
+        $this->syncUniversityRequests($offer, $request, $request->user());
+
+        return redirect()->route('offers.show', $offer)->with('success', 'Lowongan magang berhasil diperbarui.');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(string $id)
+    public function destroy(Request $request, InternshipOffer $offer): RedirectResponse
     {
-        //
+        abort_unless($request->user()->hasRole('staf'), 403);
+
+        $offer->delete();
+
+        return redirect()->route('offers.index')->with('success', 'Lowongan magang dihapus.');
+    }
+
+    public function reviewUniversityRequest(Request $request, InternshipOfferUniversity $offerRequest): RedirectResponse
+    {
+        abort_unless($request->user()->hasRole('staf') && $offerRequest->university_id === $request->user()->university_id, 403);
+
+        $attributes = $request->validate([
+            'status' => ['required', 'in:diterima,ditolak'],
+            'catatan_review' => ['nullable', 'string'],
+        ]);
+
+        $offerRequest->update([
+            ...$attributes,
+            'reviewed_by' => $request->user()->id,
+            'reviewed_at' => now(),
+        ]);
+
+        if ($attributes['status'] === 'diterima') {
+            $offerRequest->offer->update(['status' => 'terbit']);
+        }
+
+        return back()->with('success', 'Status review posisi berhasil diperbarui.');
+    }
+
+    private function validatedOffer(Request $request): array
+    {
+        return $request->validate([
+            'company_id' => ['required', 'exists:companies,id'],
+            'university_ids' => ['required', 'array', 'min:1'],
+            'university_ids.*' => ['exists:universities,id'],
+            'judul' => ['required', 'string', 'max:255'],
+            'bidang' => ['required', 'string', 'max:120'],
+            'lokasi' => ['required', 'string', 'max:160'],
+            'tipe_kerja' => ['required', 'in:onsite,remote,hybrid'],
+            'kuota' => ['required', 'integer', 'min:1', 'max:200'],
+            'tanggal_mulai' => ['nullable', 'date'],
+            'tanggal_selesai' => ['nullable', 'date', 'after_or_equal:tanggal_mulai'],
+            'batas_lamaran' => ['nullable', 'date'],
+            'deskripsi' => ['required', 'string'],
+            'persyaratan' => ['nullable', 'string'],
+            'benefit' => ['nullable', 'string'],
+            'status' => ['required', 'in:draft,menunggu,terbit,ditutup'],
+        ]);
+    }
+
+    private function formData(Request $request, ?InternshipOffer $offer = null): array
+    {
+        $user = $request->user();
+        $companyId = $user->company_id ?: $offer?->company_id;
+
+        return [
+            'companies' => $user->hasRole('perusahaan')
+                ? Company::where('id', $user->company_id)->get()
+                : Company::orderBy('nama')->get(),
+            'universities' => $companyId
+                ? University::whereHas('partneredCompanies', fn ($query) => $query->where('companies.id', $companyId)->where('company_partnerships.status', 'diterima'))->orderBy('nama')->get()
+                : University::orderBy('nama')->get(),
+            'selectedUniversities' => $offer?->universityRequests->pluck('university_id')->all() ?? [],
+        ];
+    }
+
+    private function syncUniversityRequests(InternshipOffer $offer, Request $request, User $user): void
+    {
+        $universityIds = collect($request->input('university_ids', []))->map(fn ($id) => (int) $id)->unique();
+        $companyId = $offer->company_id;
+
+        $allowedUniversityIds = CompanyPartnership::where('company_id', $companyId)
+            ->where('status', 'diterima')
+            ->whereIn('university_id', $universityIds)
+            ->pluck('university_id');
+
+        foreach ($allowedUniversityIds as $universityId) {
+            InternshipOfferUniversity::firstOrCreate([
+                'internship_offer_id' => $offer->id,
+                'university_id' => $universityId,
+            ], [
+                'requested_by' => $user->id,
+                'status' => 'menunggu',
+            ]);
+        }
     }
 }

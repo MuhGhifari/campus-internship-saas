@@ -3,13 +3,12 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Company extends Model
 {
     protected $fillable = [
-        'university_id',
         'nama',
         'industri',
         'alamat',
@@ -19,9 +18,16 @@ class Company extends Model
         'status',
     ];
 
-    public function university(): BelongsTo
+    public function universities(): BelongsToMany
     {
-        return $this->belongsTo(University::class);
+        return $this->belongsToMany(University::class, 'company_partnerships')
+            ->withPivot(['status', 'pesan', 'catatan_review', 'reviewed_at'])
+            ->withTimestamps();
+    }
+
+    public function partnerships(): HasMany
+    {
+        return $this->hasMany(CompanyPartnership::class);
     }
 
     public function representatives(): HasMany

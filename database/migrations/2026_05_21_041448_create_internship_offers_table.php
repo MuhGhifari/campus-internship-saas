@@ -13,7 +13,6 @@ return new class extends Migration
     {
         Schema::create('internship_offers', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('university_id')->index();
             $table->foreignId('company_id')->index();
             $table->foreignId('created_by')->nullable()->index();
             $table->string('judul');
@@ -27,7 +26,7 @@ return new class extends Migration
             $table->text('deskripsi');
             $table->text('persyaratan')->nullable();
             $table->text('benefit')->nullable();
-            $table->string('status')->default('menunggu')->index();
+            $table->string('status')->default('draft')->index();
             $table->timestamps();
         });
     }

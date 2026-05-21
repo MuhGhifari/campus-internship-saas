@@ -65,7 +65,7 @@ class User extends Authenticatable
         return $this->hasMany(InternshipApplication::class, 'campus_supervisor_id');
     }
 
-    public function is(string $role): bool
+    public function hasRole(string $role): bool
     {
         return $this->role === $role;
     }

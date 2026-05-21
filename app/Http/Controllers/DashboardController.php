@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Company;
+use App\Models\CompanyPartnership;
 use App\Models\InternshipApplication;
 use App\Models\InternshipOffer;
 use App\Models\LogbookEntry;
@@ -19,26 +19,43 @@ class DashboardController extends Controller
 
         $applications = InternshipApplication::query()
             ->with(['offer.company', 'student', 'campusSupervisor', 'companySupervisor'])
-            ->when($user->is('mahasiswa'), fn ($query) => $query->where('student_id', $user->id))
-            ->when($user->is('dosen'), fn ($query) => $query->where('campus_supervisor_id', $user->id))
-            ->when($user->is('perusahaan'), fn ($query) => $query->whereHas('offer', fn ($offer) => $offer->where('company_id', $user->company_id)))
-            ->when($user->is('staf'), fn ($query) => $query->whereHas('offer', fn ($offer) => $offer->where('university_id', $universityId)))
+            ->when($user->hasRole('mahasiswa'), fn ($query) => $query->where('student_id', $user->id))
+            ->when($user->hasRole('dosen'), fn ($query) => $query->where('campus_supervisor_id', $user->id))
+            ->when($user->hasRole('perusahaan'), fn ($query) => $query->whereHas('offer', fn ($offer) => $offer->where('company_id', $user->company_id)))
+            ->when($user->hasRole('staf'), fn ($query) => $query->whereHas('offer.universityRequests', fn ($offerRequest) => $offerRequest->where('university_id', $universityId)))
             ->latest()
             ->limit(8)
             ->get();
 
+        if ($user->hasRole('perusahaan')) {
+            return view('dashboard', [
+                'totalOffers' => InternshipOffer::where('company_id', $user->company_id)->count(),
+                'publishedOffers' => InternshipOffer::where('company_id', $user->company_id)->whereHas('universityRequests', fn ($offerRequest) => $offerRequest->where('status', 'diterima'))->count(),
+                'totalApplications' => InternshipApplication::whereHas('offer', fn ($offer) => $offer->where('company_id', $user->company_id))->count(),
+                'acceptedApplications' => InternshipApplication::whereHas('offer', fn ($offer) => $offer->where('company_id', $user->company_id))->where('status', 'diterima')->count(),
+                'companies' => CompanyPartnership::where('company_id', $user->company_id)->where('status', 'diterima')->count(),
+                'students' => InternshipApplication::whereHas('offer', fn ($offer) => $offer->where('company_id', $user->company_id))->distinct('student_id')->count('student_id'),
+                'logbooksWaiting' => LogbookEntry::whereHas('application.offer', fn ($offer) => $offer->where('company_id', $user->company_id))->where('status', 'menunggu')->count(),
+                'applications' => $applications,
+                'upcomingOffers' => InternshipOffer::with('company')
+                    ->where('company_id', $user->company_id)
+                    ->orderBy('batas_lamaran')
+                    ->limit(5)
+                    ->get(),
+            ]);
+        }
+
         return view('dashboard', [
-            'totalOffers' => InternshipOffer::where('university_id', $universityId)->count(),
-            'publishedOffers' => InternshipOffer::where('university_id', $universityId)->where('status', 'terbit')->count(),
-            'totalApplications' => InternshipApplication::whereHas('offer', fn ($offer) => $offer->where('university_id', $universityId))->count(),
-            'acceptedApplications' => InternshipApplication::whereHas('offer', fn ($offer) => $offer->where('university_id', $universityId))->where('status', 'diterima')->count(),
-            'companies' => Company::where('university_id', $universityId)->count(),
+            'totalOffers' => InternshipOffer::whereHas('universityRequests', fn ($offerRequest) => $offerRequest->where('university_id', $universityId))->count(),
+            'publishedOffers' => InternshipOffer::whereHas('universityRequests', fn ($offerRequest) => $offerRequest->where('university_id', $universityId)->where('status', 'diterima'))->count(),
+            'totalApplications' => InternshipApplication::whereHas('offer.universityRequests', fn ($offerRequest) => $offerRequest->where('university_id', $universityId))->count(),
+            'acceptedApplications' => InternshipApplication::whereHas('offer.universityRequests', fn ($offerRequest) => $offerRequest->where('university_id', $universityId))->where('status', 'diterima')->count(),
+            'companies' => CompanyPartnership::where('university_id', $universityId)->where('status', 'diterima')->count(),
             'students' => User::where('university_id', $universityId)->where('role', 'mahasiswa')->count(),
-            'logbooksWaiting' => LogbookEntry::whereHas('application.offer', fn ($offer) => $offer->where('university_id', $universityId))->where('status', 'menunggu')->count(),
+            'logbooksWaiting' => LogbookEntry::whereHas('application.offer.universityRequests', fn ($offerRequest) => $offerRequest->where('university_id', $universityId))->where('status', 'menunggu')->count(),
             'applications' => $applications,
             'upcomingOffers' => InternshipOffer::with('company')
-                ->where('university_id', $universityId)
-                ->where('status', 'terbit')
+                ->whereHas('universityRequests', fn ($offerRequest) => $offerRequest->where('university_id', $universityId)->where('status', 'diterima'))
                 ->orderBy('batas_lamaran')
                 ->limit(5)
                 ->get(),

@@ -13,7 +13,6 @@ return new class extends Migration
     {
         Schema::create('companies', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('university_id')->index();
             $table->string('nama');
             $table->string('industri');
             $table->string('alamat')->nullable();
