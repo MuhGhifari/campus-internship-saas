@@ -1,25 +1,30 @@
-<x-layouts.app title="Evaluasi - CareerBridge">
-    <h1 class="text-3xl font-bold">Evaluasi Magang</h1>
-    <p class="mt-2 text-slate-600">Penilaian dari pembimbing kampus dan penanggung jawab perusahaan.</p>
+@extends('layouts.app')
 
-    <div class="mt-6 space-y-5">
+@section('title', 'Evaluasi - CareerBridge')
+
+@section('content')
+    <div class="mb-8">
+        <p class="cb-section-label">Evaluasi</p>
+        <h1 class="cb-display mt-3 text-5xl font-light text-[#0D1B2A]">Nilai akhir program magang.</h1>
+        <p class="mt-3 text-[#6B7E94]">Penilaian dari pembimbing kampus dan penanggung jawab perusahaan.</p>
+    </div>
+
+    <div class="space-y-5">
         @forelse ($applications as $application)
-            <section class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+            <section class="cb-card p-6">
                 <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div>
-                        <p class="font-semibold">{{ $application->student->name }}</p>
-                        <p class="text-sm text-slate-600">{{ $application->offer->judul }} · {{ $application->offer->company->nama }}</p>
-                        <p class="mt-2 text-sm text-slate-500">Status: {{ ucfirst($application->status) }}</p>
+                        <p class="font-semibold text-[#0D1B2A]">{{ $application->student->name }}</p>
+                        <p class="mt-1 text-sm text-[#6B7E94]">{{ $application->offer->judul }} · {{ $application->offer->company->nama }}</p>
+                        <p class="mt-2 text-sm text-[#6B7E94]">Status: {{ ucfirst($application->status) }}</p>
                     </div>
                     @if ($application->evaluation)
-                        <span class="rounded-full bg-emerald-50 px-3 py-1 text-sm font-semibold text-emerald-700">
-                            Rata-rata {{ $application->evaluation->rataRata() }}
-                        </span>
+                        <span class="rounded-full bg-[#FDF3DC] px-4 py-2 text-sm font-bold text-[#0D1B2A]">Rata-rata {{ $application->evaluation->rataRata() }}</span>
                     @endif
                 </div>
 
                 @if (auth()->user()->hasRole('dosen') || auth()->user()->hasRole('perusahaan'))
-                    <form method="POST" action="{{ route('evaluations.store', $application) }}" class="mt-5 grid gap-4 sm:grid-cols-4">
+                    <form method="POST" action="{{ route('evaluations.store', $application) }}" class="mt-6 grid gap-4 sm:grid-cols-4">
                         @csrf
                         @foreach ([
                             'nilai_komunikasi' => 'Komunikasi',
@@ -29,21 +34,21 @@
                         ] as $field => $label)
                             <label class="block">
                                 <span class="text-sm font-medium">{{ $label }}</span>
-                                <input name="{{ $field }}" type="number" min="0" max="100" value="{{ old($field, $application->evaluation->{$field} ?? 80) }}" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2">
+                                <input name="{{ $field }}" type="number" min="0" max="100" value="{{ old($field, $application->evaluation->{$field} ?? 80) }}" class="cb-input mt-1">
                             </label>
                         @endforeach
                         <label class="block sm:col-span-4">
                             <span class="text-sm font-medium">Catatan</span>
-                            <textarea name="catatan" rows="3" class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2">{{ old('catatan', $application->evaluation->catatan ?? '') }}</textarea>
+                            <textarea name="catatan" rows="3" class="cb-input mt-1">{{ old('catatan', $application->evaluation->catatan ?? '') }}</textarea>
                         </label>
-                        <button class="sm:col-span-4 rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700">Simpan Evaluasi</button>
+                        <button class="cb-dark-button sm:col-span-4 px-4 py-3 text-sm">Simpan Evaluasi</button>
                     </form>
                 @endif
             </section>
         @empty
-            <div class="rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center text-slate-500">Belum ada peserta magang untuk dievaluasi.</div>
+            <div class="cb-card border-dashed p-10 text-center text-[#6B7E94]">Belum ada peserta magang untuk dievaluasi.</div>
         @endforelse
     </div>
 
     <div class="mt-6">{{ $applications->links() }}</div>
-</x-layouts.app>
+@endsection

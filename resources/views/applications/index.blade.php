@@ -1,42 +1,48 @@
-<x-layouts.app title="Lamaran - CareerBridge">
-    <h1 class="text-3xl font-bold">Lamaran Magang</h1>
-    <p class="mt-2 text-slate-600">Pantau status lamaran, penanggung jawab perusahaan, dan pembimbing kampus.</p>
+@extends('layouts.app')
 
-    <div class="mt-6 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
-        <table class="min-w-full divide-y divide-slate-200 text-sm">
-            <thead class="bg-slate-50 text-left">
+@section('title', 'Lamaran - CareerBridge')
+
+@section('content')
+    <div class="mb-8">
+        <p class="cb-section-label">Lamaran</p>
+        <h1 class="cb-display mt-3 text-5xl font-light text-[#0D1B2A]">Status kandidat dan penempatan magang.</h1>
+    </div>
+
+    <div class="cb-card overflow-hidden">
+        <table class="min-w-full divide-y divide-[#0D1B2A]/10 text-sm">
+            <thead class="bg-[#F7F3ED] text-left">
                 <tr>
-                    <th class="px-4 py-3 font-semibold">Mahasiswa</th>
-                    <th class="px-4 py-3 font-semibold">Lowongan</th>
-                    <th class="px-4 py-3 font-semibold">Status</th>
-                    <th class="px-4 py-3 font-semibold">Pembimbing</th>
-                    <th class="px-4 py-3 font-semibold">Periode</th>
+                    <th class="px-5 py-4 font-semibold">Mahasiswa</th>
+                    <th class="px-5 py-4 font-semibold">Lowongan</th>
+                    <th class="px-5 py-4 font-semibold">Status</th>
+                    <th class="px-5 py-4 font-semibold">Pembimbing</th>
+                    <th class="px-5 py-4 font-semibold">Periode</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-slate-100">
+            <tbody class="divide-y divide-[#0D1B2A]/10 bg-white">
                 @forelse ($applications as $application)
-                    <tr>
-                        <td class="px-4 py-4">
-                            <p class="font-semibold">{{ $application->student->name }}</p>
-                            <p class="text-slate-500">{{ $application->student->nomor_induk }}</p>
+                    <tr class="hover:bg-[#F7F3ED]/60">
+                        <td class="px-5 py-4">
+                            <p class="font-semibold text-[#0D1B2A]">{{ $application->student->name }}</p>
+                            <p class="text-[#6B7E94]">{{ $application->student->nomor_induk }}</p>
                         </td>
-                        <td class="px-4 py-4">
-                            <a href="{{ route('offers.show', $application->offer) }}" class="font-semibold text-emerald-700">{{ $application->offer->judul }}</a>
-                            <p class="text-slate-500">{{ $application->offer->company->nama }}</p>
+                        <td class="px-5 py-4">
+                            <a href="{{ route('offers.show', $application->offer) }}" class="font-semibold text-[#0D1B2A] hover:text-[#E8A020]">{{ $application->offer->judul }}</a>
+                            <p class="text-[#6B7E94]">{{ $application->offer->company->nama }}</p>
                         </td>
-                        <td class="px-4 py-4"><span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium">{{ ucfirst($application->status) }}</span></td>
-                        <td class="px-4 py-4">
+                        <td class="px-5 py-4"><span class="rounded-full bg-[#FDF3DC] px-3 py-1 text-xs font-semibold text-[#0D1B2A]">{{ ucfirst($application->status) }}</span></td>
+                        <td class="px-5 py-4 text-[#3D526B]">
                             <p>Kampus: {{ $application->campusSupervisor->name ?? '-' }}</p>
-                            <p class="text-slate-500">Perusahaan: {{ $application->companySupervisor->name ?? '-' }}</p>
+                            <p>Perusahaan: {{ $application->companySupervisor->name ?? '-' }}</p>
                         </td>
-                        <td class="px-4 py-4 text-slate-600">{{ $application->tanggal_mulai?->format('d/m/Y') ?? '-' }} - {{ $application->tanggal_selesai?->format('d/m/Y') ?? '-' }}</td>
+                        <td class="px-5 py-4 text-[#6B7E94]">{{ $application->tanggal_mulai?->format('d/m/Y') ?? '-' }} - {{ $application->tanggal_selesai?->format('d/m/Y') ?? '-' }}</td>
                     </tr>
                 @empty
-                    <tr><td colspan="5" class="px-4 py-8 text-center text-slate-500">Belum ada lamaran.</td></tr>
+                    <tr><td colspan="5" class="px-5 py-10 text-center text-[#6B7E94]">Belum ada lamaran.</td></tr>
                 @endforelse
             </tbody>
         </table>
     </div>
 
     <div class="mt-6">{{ $applications->links() }}</div>
-</x-layouts.app>
+@endsection

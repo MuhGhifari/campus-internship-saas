@@ -1,54 +1,62 @@
-<x-layouts.app title="Masuk - CareerBridge">
-    <div class="mx-auto grid max-w-5xl overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm lg:grid-cols-[1fr_420px]">
-        <section class="bg-slate-950 p-8 text-white lg:p-10">
-            <p class="text-sm font-semibold uppercase tracking-wide text-emerald-300">CareerBridge Workspace</p>
-            <h1 class="mt-4 text-3xl font-bold">Masuk ke ruang kerja sesuai peran Anda.</h1>
-            <p class="mt-4 text-sm leading-6 text-slate-300">Universitas mengelola kemitraan, perusahaan menyeleksi kandidat, mahasiswa melamar posisi, dan dosen memantau progres magang.</p>
+@extends('layouts.app')
 
-            <div class="mt-8 grid gap-3 text-sm">
-                <div class="rounded-lg border border-white/10 bg-white/5 p-4">
-                    <p class="font-semibold text-cyan-200">Universitas</p>
-                    <p class="mt-1 text-slate-300">Review proposal perusahaan dan lowongan.</p>
+@section('title', 'Masuk — CareerBridge')
+
+@section('content')
+    <section class="relative min-h-[calc(100vh-68px)] overflow-hidden bg-[#0D1B2A] px-5 py-16 text-white">
+        <div class="cb-grid-bg absolute inset-0 opacity-[0.03]"></div>
+        <div class="relative mx-auto grid max-w-6xl overflow-hidden rounded-2xl border border-white/15 bg-white/[0.06] shadow-2xl lg:grid-cols-[1fr_430px]">
+            <section class="p-8 lg:p-12">
+                <p class="inline-flex rounded-full border border-[#E8A020]/30 bg-[#E8A020]/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[#F5B84A]">Ruang Kerja CareerBridge</p>
+                <h1 class="cb-display mt-7 max-w-2xl text-5xl font-light leading-none sm:text-7xl">Masuk sesuai peran, lanjutkan alur magang.</h1>
+                <div class="mt-10 grid gap-4 md:grid-cols-3">
+                    @foreach ([
+                        ['university', 'Kampus', 'Tinjau partner dan posisi.'],
+                        ['company', 'Perusahaan', 'Kelola kandidat magang.'],
+                        ['student', 'Mahasiswa', 'Lamar lowongan resmi.'],
+                    ] as [$icon, $title, $desc])
+                        <div class="rounded-xl border border-white/10 bg-white/5 p-4">
+                            <div class="grid h-10 w-10 place-items-center rounded-lg bg-[#E8A020]/15 text-[#E8A020]">
+                                @include('partials.icon', ['name' => $icon, 'class' => 'h-5 w-5'])
+                            </div>
+                            <p class="mt-3 font-semibold">{{ $title }}</p>
+                            <p class="mt-1 text-sm leading-6 text-white/55">{{ $desc }}</p>
+                        </div>
+                    @endforeach
                 </div>
-                <div class="rounded-lg border border-white/10 bg-white/5 p-4">
-                    <p class="font-semibold text-amber-200">Perusahaan</p>
-                    <p class="mt-1 text-slate-300">Ajukan kemitraan dan kelola kandidat.</p>
+            </section>
+
+            <section class="bg-[#F7F3ED] p-7 text-[#0D1B2A] lg:p-8">
+                <p class="text-xs font-bold uppercase tracking-[0.18em] text-[#E8A020]">Masuk</p>
+                <h2 class="cb-display mt-3 text-4xl font-light">Selamat datang kembali.</h2>
+
+                <form method="POST" action="{{ route('login.store') }}" class="mt-7 space-y-4">
+                    @csrf
+                    <label class="block">
+                        <span class="text-sm font-medium">Email</span>
+                        <input name="email" type="email" value="{{ old('email') }}" required class="cb-input mt-1">
+                    </label>
+                    <label class="block">
+                        <span class="text-sm font-medium">Kata Sandi</span>
+                        <input name="password" type="password" required class="cb-input mt-1">
+                    </label>
+                    <label class="flex items-center gap-2 text-sm">
+                        <input name="remember" type="checkbox" class="rounded border-[#0D1B2A]/20">
+                        Ingat saya
+                    </label>
+                    <button class="cb-dark-button w-full px-4 py-3">Masuk</button>
+                </form>
+
+                <div class="mt-7 rounded-xl border border-[#0D1B2A]/10 bg-white p-4 text-sm text-[#3D526B]">
+                    <p class="font-semibold text-[#0D1B2A]">Akun demo</p>
+                    <div class="mt-3 space-y-1">
+                        <p>staf@careerbridge.test / password</p>
+                        <p>hr@careerbridge.test / password</p>
+                        <p>mahasiswa@careerbridge.test / password</p>
+                        <p>dosen@careerbridge.test / password</p>
+                    </div>
                 </div>
-                <div class="rounded-lg border border-white/10 bg-white/5 p-4">
-                    <p class="font-semibold text-emerald-200">Mahasiswa</p>
-                    <p class="mt-1 text-slate-300">Cari lowongan resmi kampus dan submit CV.</p>
-                </div>
-            </div>
-        </section>
-
-        <section class="p-6 lg:p-8">
-            <h2 class="text-2xl font-bold">Masuk</h2>
-            <p class="mt-2 text-sm text-slate-600">Gunakan akun demo atau akun yang sudah terdaftar.</p>
-
-            <form method="POST" action="{{ route('login.store') }}" class="mt-6 space-y-4">
-                @csrf
-                <label class="block">
-                    <span class="text-sm font-medium">Email</span>
-                    <input name="email" type="email" value="{{ old('email') }}" required class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2">
-                </label>
-                <label class="block">
-                    <span class="text-sm font-medium">Kata Sandi</span>
-                    <input name="password" type="password" required class="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2">
-                </label>
-                <label class="flex items-center gap-2 text-sm">
-                    <input name="remember" type="checkbox" class="rounded border-slate-300">
-                    Ingat saya
-                </label>
-                <button class="w-full rounded-lg bg-emerald-600 px-4 py-2 font-semibold text-white hover:bg-emerald-700">Masuk</button>
-            </form>
-
-            <div class="mt-6 rounded-lg bg-slate-50 p-4 text-sm text-slate-600">
-                <p class="font-semibold text-slate-900">Akun demo</p>
-                <p>staf@careerbridge.test / password</p>
-                <p>hr@careerbridge.test / password</p>
-                <p>mahasiswa@careerbridge.test / password</p>
-                <p>dosen@careerbridge.test / password</p>
-            </div>
-        </section>
-    </div>
-</x-layouts.app>
+            </section>
+        </div>
+    </section>
+@endsection

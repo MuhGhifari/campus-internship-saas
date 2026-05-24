@@ -1,133 +1,97 @@
-<x-layouts.app title="Dashboard - CareerBridge">
+@extends('layouts.app')
+
+@section('title', 'Ringkasan - CareerBridge')
+
+@section('content')
     @php($user = auth()->user())
 
-    @if ($user->hasRole('staf'))
-        <section class="rounded-lg bg-slate-950 p-6 text-white shadow-sm">
-            <p class="text-sm font-semibold uppercase tracking-wide text-cyan-300">Konsol universitas</p>
-            <h1 class="mt-2 text-3xl font-bold">Pantau kemitraan dan penempatan magang kampus.</h1>
-            <p class="mt-3 max-w-2xl text-sm leading-6 text-slate-300">Gunakan dashboard ini untuk mengawasi perusahaan partner, review posisi, lamaran mahasiswa, dan evaluasi akhir.</p>
-        </section>
+    @php
+        $hero = match (true) {
+            $user->hasRole('staf') => ['Konsol Universitas', 'Pantau kemitraan, lowongan, dan hasil magang kampus.', 'university', route('partnerships.index'), 'Tinjau Kemitraan'],
+            $user->hasRole('perusahaan') => ['Portal Perusahaan', 'Bangun jalur talenta dari kampus partner.', 'company', route('partnerships.index'), 'Ajukan Kemitraan'],
+            $user->hasRole('mahasiswa') => ['Ruang Mahasiswa', 'Temukan lowongan resmi dan pantau lamaranmu.', 'student', route('offers.index'), 'Cari Lowongan'],
+            default => ['Meja Pembimbing', 'Tinjau catatan harian dan evaluasi mahasiswa bimbingan.', 'mentor', route('logbooks.index'), 'Tinjau Catatan'],
+        };
+    @endphp
 
-        <section class="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            @foreach ([
-                ['Lowongan Masuk', $totalOffers, 'Perlu review kampus'],
-                ['Lowongan Terbit', $publishedOffers, 'Sudah terlihat mahasiswa'],
-                ['Perusahaan Partner', $companies, 'Kemitraan diterima'],
-                ['Evaluasi', $acceptedApplications, 'Mahasiswa ditempatkan'],
-            ] as [$label, $value, $desc])
-                <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-                    <p class="text-sm text-slate-500">{{ $label }}</p>
-                    <p class="mt-2 text-3xl font-bold">{{ $value }}</p>
-                    <p class="mt-1 text-sm text-slate-500">{{ $desc }}</p>
-                </div>
-            @endforeach
-        </section>
-    @elseif ($user->hasRole('perusahaan'))
-        <section class="grid gap-5 lg:grid-cols-[1fr_360px]">
-            <div class="rounded-lg bg-zinc-950 p-6 text-white shadow-sm">
-                <p class="text-sm font-semibold uppercase tracking-wide text-amber-300">Portal perusahaan</p>
-                <h1 class="mt-2 text-3xl font-bold">Kelola pipeline kampus dan kandidat magang.</h1>
-                <p class="mt-3 max-w-2xl text-sm leading-6 text-zinc-300">Ajukan kemitraan, kirim posisi ke kampus partner, lalu review CV mahasiswa dari satu ruang kerja.</p>
-                <a href="{{ route('partnerships.index') }}" class="mt-5 inline-flex rounded-lg bg-amber-400 px-4 py-2 text-sm font-semibold text-zinc-950 hover:bg-amber-300">Ajukan Kemitraan</a>
+    <section class="relative overflow-hidden rounded-2xl bg-[#0D1B2A] p-8 text-white shadow-xl">
+        <div class="cb-grid-bg absolute inset-0 opacity-[0.04]"></div>
+        <div class="relative flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+                <p class="text-xs font-bold uppercase tracking-[0.18em] text-[#E8A020]">{{ $hero[0] }}</p>
+                <h1 class="cb-display mt-3 max-w-3xl text-5xl font-light leading-none">{{ $hero[1] }}</h1>
             </div>
-            <div class="rounded-lg border border-amber-200 bg-amber-50 p-5">
-                <p class="text-sm font-semibold text-amber-900">Fokus HR</p>
-                <p class="mt-2 text-3xl font-bold text-amber-950">{{ $totalApplications }}</p>
-                <p class="mt-1 text-sm text-amber-800">Lamaran masuk untuk posisi perusahaan Anda.</p>
+            <a href="{{ $hero[3] }}" class="cb-primary inline-flex items-center justify-center gap-2 px-5 py-3 text-sm">
+                @include('partials.icon', ['name' => $hero[2], 'class' => 'h-4 w-4'])
+                {{ $hero[4] }}
+            </a>
+        </div>
+    </section>
+
+    <section class="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        @foreach ([
+            ['Lowongan', $totalOffers, 'Total posisi dalam sistem', 'clipboard'],
+            ['Terbit', $publishedOffers, 'Disetujui dan aktif', 'check'],
+            [$user->hasRole('perusahaan') ? 'Kampus Partner' : 'Perusahaan', $companies, 'Kemitraan diterima', 'handshake'],
+            ['Lamaran', $totalApplications, 'Aktivitas kandidat', 'inbox'],
+        ] as [$label, $value, $desc, $icon])
+            <div class="cb-card p-5">
+                <div class="flex items-start justify-between gap-4">
+                    <div>
+                        <p class="text-sm text-[#6B7E94]">{{ $label }}</p>
+                        <p class="cb-display mt-2 text-4xl font-bold text-[#0D1B2A]">{{ $value }}</p>
+                    </div>
+                    <span class="grid h-11 w-11 place-items-center rounded-xl bg-[#FDF3DC] text-[#0D1B2A]">
+                        @include('partials.icon', ['name' => $icon, 'class' => 'h-5 w-5'])
+                    </span>
+                </div>
+                <p class="mt-2 text-sm text-[#6B7E94]">{{ $desc }}</p>
             </div>
-        </section>
+        @endforeach
+    </section>
 
-        <section class="mt-6 grid gap-4 sm:grid-cols-3">
-            @foreach ([
-                ['Posisi Dibuat', $totalOffers],
-                ['Disetujui Kampus', $publishedOffers],
-                ['Kemitraan Aktif', $companies],
-            ] as [$label, $value])
-                <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-                    <p class="text-sm text-slate-500">{{ $label }}</p>
-                    <p class="mt-2 text-3xl font-bold">{{ $value }}</p>
-                </div>
-            @endforeach
-        </section>
-    @elseif ($user->hasRole('mahasiswa'))
-        <section class="rounded-lg bg-emerald-950 p-6 text-white shadow-sm">
-            <p class="text-sm font-semibold uppercase tracking-wide text-emerald-200">Ruang mahasiswa</p>
-            <h1 class="mt-2 text-3xl font-bold">Temukan peluang magang yang sudah disetujui kampus.</h1>
-            <p class="mt-3 max-w-2xl text-sm leading-6 text-emerald-100/80">Lihat posisi resmi, kirim CV, pantau status lamaran, dan isi logbook ketika magang sudah berjalan.</p>
-            <a href="{{ route('offers.index') }}" class="mt-5 inline-flex rounded-lg bg-emerald-400 px-4 py-2 text-sm font-semibold text-emerald-950 hover:bg-emerald-300">Cari Lowongan</a>
-        </section>
-
-        <section class="mt-6 grid gap-4 sm:grid-cols-3">
-            @foreach ([
-                ['Lamaran Saya', $totalApplications],
-                ['Diterima', $acceptedApplications],
-                ['Logbook Review', $logbooksWaiting],
-            ] as [$label, $value])
-                <div class="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
-                    <p class="text-sm text-slate-500">{{ $label }}</p>
-                    <p class="mt-2 text-3xl font-bold">{{ $value }}</p>
-                </div>
-            @endforeach
-        </section>
-    @else
-        <section class="rounded-lg bg-indigo-950 p-6 text-white shadow-sm">
-            <p class="text-sm font-semibold uppercase tracking-wide text-indigo-200">Meja pembimbing</p>
-            <h1 class="mt-2 text-3xl font-bold">Review progres mahasiswa bimbingan.</h1>
-            <p class="mt-3 max-w-2xl text-sm leading-6 text-indigo-100/80">Pantau lamaran yang sudah ditempatkan, tinjau logbook, dan berikan evaluasi akademik.</p>
-            <a href="{{ route('logbooks.index') }}" class="mt-5 inline-flex rounded-lg bg-indigo-400 px-4 py-2 text-sm font-semibold text-indigo-950 hover:bg-indigo-300">Review Logbook</a>
-        </section>
-    @endif
-
-    <section class="mt-8 grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-        <div class="rounded-lg border border-slate-200 bg-white shadow-sm">
-            <div class="border-b border-slate-200 p-5">
-                <h2 class="font-semibold">
-                    @if ($user->hasRole('perusahaan'))
-                        Kandidat Terbaru
-                    @elseif ($user->hasRole('mahasiswa'))
-                        Riwayat Lamaran Saya
-                    @else
-                        Aktivitas Lamaran Terbaru
-                    @endif
+    <section class="mt-8 grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+        <div class="cb-card overflow-hidden">
+            <div class="border-b border-[#0D1B2A]/10 p-5">
+                <p class="text-xs font-bold uppercase tracking-[0.16em] text-[#E8A020]">Aktivitas</p>
+                <h2 class="mt-1 font-semibold text-[#0D1B2A]">
+                    {{ $user->hasRole('perusahaan') ? 'Kandidat terbaru' : ($user->hasRole('mahasiswa') ? 'Riwayat lamaran saya' : 'Lamaran terbaru') }}
                 </h2>
             </div>
-            <div class="divide-y divide-slate-100">
+            <div class="divide-y divide-[#0D1B2A]/10">
                 @forelse ($applications as $application)
                     <div class="p-5">
                         <div class="flex items-start justify-between gap-4">
                             <div>
-                                <p class="font-semibold">{{ $application->student->name }}</p>
-                                <p class="text-sm text-slate-600">{{ $application->offer->judul }} di {{ $application->offer->company->nama }}</p>
+                                <p class="font-semibold text-[#0D1B2A]">{{ $application->student->name }}</p>
+                                <p class="mt-1 text-sm text-[#6B7E94]">{{ $application->offer->judul }} di {{ $application->offer->company->nama }}</p>
                             </div>
-                            <span class="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium">{{ ucfirst($application->status) }}</span>
+                            <span class="rounded-full bg-[#FDF3DC] px-3 py-1 text-xs font-semibold text-[#0D1B2A]">{{ ucfirst($application->status) }}</span>
                         </div>
-                        <p class="mt-2 text-sm text-slate-500">
-                            Pembimbing kampus: {{ $application->campusSupervisor->name ?? 'Belum ditentukan' }}
-                        </p>
+                        <p class="mt-3 text-sm text-[#6B7E94]">Pembimbing kampus: {{ $application->campusSupervisor->name ?? 'Belum ditentukan' }}</p>
                     </div>
                 @empty
-                    <p class="p-5 text-sm text-slate-500">Belum ada aktivitas lamaran.</p>
+                    <p class="p-5 text-sm text-[#6B7E94]">Belum ada aktivitas lamaran.</p>
                 @endforelse
             </div>
         </div>
 
-        <div class="rounded-lg border border-slate-200 bg-white shadow-sm">
-            <div class="border-b border-slate-200 p-5">
-                <h2 class="font-semibold">{{ $user->hasRole('perusahaan') ? 'Posisi Perusahaan' : 'Batas Lamaran Terdekat' }}</h2>
+        <div class="cb-card overflow-hidden">
+            <div class="border-b border-[#0D1B2A]/10 p-5">
+                <p class="text-xs font-bold uppercase tracking-[0.16em] text-[#E8A020]">Prioritas</p>
+                <h2 class="mt-1 font-semibold text-[#0D1B2A]">{{ $user->hasRole('perusahaan') ? 'Posisi perusahaan' : 'Batas lamaran terdekat' }}</h2>
             </div>
-            <div class="divide-y divide-slate-100">
+            <div class="divide-y divide-[#0D1B2A]/10">
                 @forelse ($upcomingOffers as $offer)
-                    <a href="{{ route('offers.show', $offer) }}" class="block p-5 hover:bg-slate-50">
-                        <p class="font-semibold">{{ $offer->judul }}</p>
-                        <p class="text-sm text-slate-600">{{ $offer->company->nama }}</p>
-                        <p class="mt-2 text-sm text-emerald-700">
-                            Deadline {{ $offer->batas_lamaran?->translatedFormat('d F Y') ?? 'Belum ditentukan' }}
-                        </p>
+                    <a href="{{ route('offers.show', $offer) }}" class="block p-5 transition hover:bg-[#F7F3ED]">
+                        <p class="font-semibold text-[#0D1B2A]">{{ $offer->judul }}</p>
+                        <p class="mt-1 text-sm text-[#6B7E94]">{{ $offer->company->nama }}</p>
+                        <p class="mt-3 text-sm font-semibold text-[#E8A020]">Batas {{ $offer->batas_lamaran?->translatedFormat('d F Y') ?? 'Belum ditentukan' }}</p>
                     </a>
                 @empty
-                    <p class="p-5 text-sm text-slate-500">Tidak ada lowongan.</p>
+                    <p class="p-5 text-sm text-[#6B7E94]">Tidak ada lowongan.</p>
                 @endforelse
             </div>
         </div>
     </section>
-</x-layouts.app>
+@endsection
