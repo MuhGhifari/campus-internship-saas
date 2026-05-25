@@ -13,8 +13,9 @@ class PartnershipController extends Controller
     public function index(Request $request): View
     {
         $user = $request->user();
+        abort_unless($user->hasRole('perusahaan') || $user->hasRole('staf'), 403);
 
-        return view('partnerships.index', [
+        return $this->workspaceView($request, 'partnerships', [
             'partnerships' => CompanyPartnership::with(['company', 'university', 'requester', 'reviewer'])
                 ->when($user->hasRole('perusahaan'), fn ($query) => $query->where('company_id', $user->company_id))
                 ->when($user->hasRole('staf'), fn ($query) => $query->where('university_id', $user->university_id))

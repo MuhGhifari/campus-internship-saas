@@ -14,7 +14,7 @@ class LogbookEntryController extends Controller
     {
         $user = $request->user();
 
-        return view('logbooks.index', [
+        return $this->workspaceView($request, 'logbooks', [
             'logbooks' => LogbookEntry::with(['application.offer.company', 'student'])
                 ->when($user->hasRole('mahasiswa'), fn ($query) => $query->where('student_id', $user->id))
                 ->when($user->hasRole('dosen'), fn ($query) => $query->whereHas('application', fn ($application) => $application->where('campus_supervisor_id', $user->id)))
@@ -43,6 +43,7 @@ class LogbookEntryController extends Controller
 
         $application = InternshipApplication::findOrFail($attributes['internship_application_id']);
         abort_unless($application->student_id === $request->user()->id, 403);
+        abort_unless(in_array($application->status, ['diterima', 'berjalan'], true), 403);
 
         LogbookEntry::create([
             ...$attributes,

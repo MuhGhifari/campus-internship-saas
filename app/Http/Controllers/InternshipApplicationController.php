@@ -14,7 +14,7 @@ class InternshipApplicationController extends Controller
     {
         $user = $request->user();
 
-        return view('applications.index', [
+        return $this->workspaceView($request, 'applications', [
             'applications' => InternshipApplication::with(['offer.company', 'student', 'campusSupervisor', 'companySupervisor'])
                 ->when($user->hasRole('mahasiswa'), fn ($query) => $query->where('student_id', $user->id))
                 ->when($user->hasRole('dosen'), fn ($query) => $query->where('campus_supervisor_id', $user->id))
@@ -29,6 +29,10 @@ class InternshipApplicationController extends Controller
     {
         abort_unless($request->user()->hasRole('mahasiswa'), 403);
         abort_unless($offer->universityRequests()->where('university_id', $request->user()->university_id)->where('status', 'diterima')->exists(), 403);
+
+        if (InternshipApplication::where('internship_offer_id', $offer->id)->where('student_id', $request->user()->id)->exists()) {
+            return back()->withErrors(['offer' => 'Anda sudah mengirim lamaran untuk posisi ini.']);
+        }
 
         $attributes = $request->validate([
             'motivasi' => ['required', 'string', 'min:20'],
@@ -51,7 +55,11 @@ class InternshipApplicationController extends Controller
     public function update(Request $request, InternshipApplication $application): RedirectResponse
     {
         $user = $request->user();
-        abort_unless($user->hasRole('staf') || ($user->hasRole('perusahaan') && $application->offer->company_id === $user->company_id), 403);
+        abort_unless(
+            ($user->hasRole('staf') && $application->offer->universityRequests()->where('university_id', $user->university_id)->exists()) ||
+            ($user->hasRole('perusahaan') && $application->offer->company_id === $user->company_id),
+            403
+        );
 
         $attributes = $request->validate([
             'status' => ['required', 'in:diajukan,diseleksi,wawancara,diterima,ditolak,berjalan,selesai'],

@@ -3,9 +3,8 @@
 @section('title', 'Ringkasan - CareerBridge')
 
 @section('content')
-    @php($user = auth()->user())
-
     @php
+        $user = auth()->user();
         $hero = match (true) {
             $user->hasRole('staf') => ['Konsol Universitas', 'Pantau kemitraan, lowongan, dan hasil magang kampus.', 'university', route('partnerships.index'), 'Tinjau Kemitraan'],
             $user->hasRole('perusahaan') => ['Portal Perusahaan', 'Bangun jalur talenta dari kampus partner.', 'company', route('partnerships.index'), 'Ajukan Kemitraan'],

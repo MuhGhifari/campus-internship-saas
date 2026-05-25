@@ -5,7 +5,7 @@
 @section('content')
     <section id="beranda" class="relative flex min-h-[calc(100vh-68px)] flex-col items-center justify-center overflow-hidden bg-[#0D1B2A] px-5 py-24 text-center text-white lg:px-16">
         <div class="cb-grid-bg absolute inset-0 opacity-[0.04]"></div>
-        <div class="absolute left-1/2 top-1/2 h-[700px] w-[700px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#E8A020]/15"></div>
+        <div class="absolute left-1/2 top-1/2 h-175 w-[700px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#E8A020]/15"></div>
         <div class="absolute left-1/2 top-1/2 h-[1000px] w-[1000px] -translate-x-1/2 -translate-y-1/2 rounded-full border border-[#E8A020]/10"></div>
 
         <div class="relative z-10 w-full max-w-6xl">

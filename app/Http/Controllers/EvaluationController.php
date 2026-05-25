@@ -14,12 +14,13 @@ class EvaluationController extends Controller
     {
         $user = $request->user();
 
-        return view('evaluations.index', [
+        return $this->workspaceView($request, 'evaluations', [
             'applications' => InternshipApplication::with(['offer.company', 'student', 'campusSupervisor', 'companySupervisor', 'evaluation'])
                 ->whereIn('status', ['berjalan', 'selesai', 'diterima'])
                 ->when($user->hasRole('dosen'), fn ($query) => $query->where('campus_supervisor_id', $user->id))
                 ->when($user->hasRole('perusahaan'), fn ($query) => $query->whereHas('offer', fn ($offer) => $offer->where('company_id', $user->company_id)))
                 ->when($user->hasRole('staf'), fn ($query) => $query->whereHas('offer.universityRequests', fn ($offerRequest) => $offerRequest->where('university_id', $user->university_id)))
+                ->when($user->hasRole('mahasiswa'), fn ($query) => $query->where('student_id', $user->id))
                 ->latest()
                 ->paginate(10),
         ]);

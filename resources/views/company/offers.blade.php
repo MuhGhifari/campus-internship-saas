@@ -10,7 +10,7 @@
             <p class="mt-3 text-[#6B7E94]">Setiap posisi melewati tinjauan universitas sebelum tampil ke mahasiswa.</p>
         </div>
         @if (auth()->user()->hasRole('staf') || auth()->user()->hasRole('perusahaan'))
-            <a href="{{ route('offers.create') }}" class="cb-primary inline-flex px-5 py-3 text-sm">Buat Lowongan</a>
+            <button type="button" data-modal-target="#offer-create-modal" class="cb-primary inline-flex px-5 py-3 text-sm">Buat Lowongan</button>
         @endif
     </div>
 
@@ -43,4 +43,19 @@
     </div>
 
     <div class="mt-6">{{ $offers->links() }}</div>
+
+    @if (auth()->user()->hasRole('staf') || auth()->user()->hasRole('perusahaan'))
+        @component('partials.modal-shell', [
+            'id' => 'offer-create-modal',
+            'title' => 'Buat lowongan magang',
+            'eyebrow' => 'Lowongan Baru',
+            'description' => 'Lengkapi detail posisi dan pilih kampus partner tujuan.',
+            'width' => 'max-w-5xl',
+            'open' => session('open_modal') === 'offer-create-modal' || $errors->any(),
+        ])
+            <form method="POST" action="{{ route('offers.store') }}">
+                @include('offers._form')
+            </form>
+        @endcomponent
+    @endif
 @endsection

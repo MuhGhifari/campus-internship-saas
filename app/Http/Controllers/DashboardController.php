@@ -28,7 +28,7 @@ class DashboardController extends Controller
             ->get();
 
         if ($user->hasRole('perusahaan')) {
-            return view('dashboard', [
+            return $this->workspaceView($request, 'dashboard', [
                 'totalOffers' => InternshipOffer::where('company_id', $user->company_id)->count(),
                 'publishedOffers' => InternshipOffer::where('company_id', $user->company_id)->whereHas('universityRequests', fn ($offerRequest) => $offerRequest->where('status', 'diterima'))->count(),
                 'totalApplications' => InternshipApplication::whereHas('offer', fn ($offer) => $offer->where('company_id', $user->company_id))->count(),
@@ -45,7 +45,7 @@ class DashboardController extends Controller
             ]);
         }
 
-        return view('dashboard', [
+        return $this->workspaceView($request, 'dashboard', [
             'totalOffers' => InternshipOffer::whereHas('universityRequests', fn ($offerRequest) => $offerRequest->where('university_id', $universityId))->count(),
             'publishedOffers' => InternshipOffer::whereHas('universityRequests', fn ($offerRequest) => $offerRequest->where('university_id', $universityId)->where('status', 'diterima'))->count(),
             'totalApplications' => InternshipApplication::whereHas('offer.universityRequests', fn ($offerRequest) => $offerRequest->where('university_id', $universityId))->count(),

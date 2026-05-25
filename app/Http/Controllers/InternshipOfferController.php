@@ -17,8 +17,9 @@ class InternshipOfferController extends Controller
     public function index(Request $request): View
     {
         $user = $request->user();
+        abort_unless($user->hasRole('mahasiswa') || $user->hasRole('staf') || $user->hasRole('perusahaan'), 403);
 
-        return view('offers.index', [
+        $data = [
             'offers' => InternshipOffer::with(['company', 'applications', 'universityRequests.university'])
                 ->when($user->hasRole('mahasiswa'), fn ($query) => $query->whereHas('universityRequests', fn ($request) => $request
                     ->where('university_id', $user->university_id)
@@ -29,14 +30,20 @@ class InternshipOfferController extends Controller
                 ->when($request->filled('status'), fn ($query) => $query->where('status', $request->status))
                 ->latest()
                 ->paginate(9),
-        ]);
+        ];
+
+        if ($user->hasRole('staf') || $user->hasRole('perusahaan')) {
+            $data = [...$data, ...$this->formData($request)];
+        }
+
+        return $this->workspaceView($request, 'offers', $data);
     }
 
-    public function create(Request $request): View
+    public function create(Request $request): RedirectResponse
     {
         abort_unless($request->user()->hasRole('staf') || $request->user()->hasRole('perusahaan'), 403);
 
-        return view('offers.create', $this->formData($request));
+        return redirect()->route('offers.index')->with('open_modal', 'offer-create-modal');
     }
 
     public function store(Request $request): RedirectResponse
@@ -68,7 +75,7 @@ class InternshipOfferController extends Controller
             403
         );
 
-        return view('offers.show', [
+        return $this->workspaceView($request, 'offer-show', [
             'offer' => $offer->load(['company', 'applications.student', 'applications.campusSupervisor', 'universityRequests.university']),
             'lecturers' => User::where('university_id', $request->user()->university_id)->where('role', 'dosen')->orderBy('name')->get(),
             'companySupervisors' => User::where('company_id', $offer->company_id)->where('role', 'perusahaan')->orderBy('name')->get(),
@@ -77,9 +84,9 @@ class InternshipOfferController extends Controller
 
     public function edit(Request $request, InternshipOffer $offer): View
     {
-        abort_unless($request->user()->hasRole('staf') || ($request->user()->hasRole('perusahaan') && $request->user()->company_id === $offer->company_id), 403);
+        abort_unless($this->canManageOffer($request, $offer), 403);
 
-        return view('offers.edit', [
+        return $this->workspaceView($request, 'offer-edit', [
             'offer' => $offer,
             ...$this->formData($request, $offer),
         ]);
@@ -87,7 +94,7 @@ class InternshipOfferController extends Controller
 
     public function update(Request $request, InternshipOffer $offer): RedirectResponse
     {
-        abort_unless($request->user()->hasRole('staf') || ($request->user()->hasRole('perusahaan') && $request->user()->company_id === $offer->company_id), 403);
+        abort_unless($this->canManageOffer($request, $offer), 403);
 
         $attributes = $this->validatedOffer($request);
 
@@ -104,7 +111,7 @@ class InternshipOfferController extends Controller
 
     public function destroy(Request $request, InternshipOffer $offer): RedirectResponse
     {
-        abort_unless($request->user()->hasRole('staf'), 403);
+        abort_unless($this->canManageOffer($request, $offer), 403);
 
         $offer->delete();
 
@@ -168,6 +175,23 @@ class InternshipOfferController extends Controller
                 : University::orderBy('nama')->get(),
             'selectedUniversities' => $offer?->universityRequests->pluck('university_id')->all() ?? [],
         ];
+    }
+
+    private function canManageOffer(Request $request, InternshipOffer $offer): bool
+    {
+        $user = $request->user();
+
+        if ($user->hasRole('perusahaan')) {
+            return $offer->company_id === $user->company_id;
+        }
+
+        if ($user->hasRole('staf')) {
+            return $offer->universityRequests()
+                ->where('university_id', $user->university_id)
+                ->exists();
+        }
+
+        return false;
     }
 
     private function syncUniversityRequests(InternshipOffer $offer, Request $request, User $user): void
