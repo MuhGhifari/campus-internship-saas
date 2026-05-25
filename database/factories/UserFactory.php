@@ -55,7 +55,7 @@ class UserFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'university_id' => $university->id,
             'company_id' => null,
-            'role' => 'dosen',
+            'role' => 'university_supervisor',
         ]);
     }
 
@@ -75,6 +75,16 @@ class UserFactory extends Factory
             'company_id' => $company->id,
             'role' => 'perusahaan',
             'nomor_induk' => null,
+            'program_studi' => null,
+        ]);
+    }
+
+    public function companySupervisor(Company $company): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'university_id' => null,
+            'company_id' => $company->id,
+            'role' => 'company_supervisor',
             'program_studi' => null,
         ]);
     }

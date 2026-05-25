@@ -1,17 +1,14 @@
 @extends('layouts.app')
 
-@section('title', 'Lowongan Magang - CareerBridge')
+@section('title', 'Listing Magang - CareerBridge')
 
 @section('content')
     <div class="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-            <p class="cb-section-label">Lowongan</p>
-            <h1 class="cb-display mt-3 text-5xl font-light text-[#0D1B2A]">Peluang magang resmi dari jaringan partner.</h1>
-            <p class="mt-3 text-[#6B7E94]">Setiap posisi melewati tinjauan universitas sebelum tampil ke mahasiswa.</p>
+            <p class="cb-section-label">Listing Magang</p>
+            <h1 class="cb-display mt-3 text-5xl font-light text-[#0D1B2A]">Tinjau posisi dari perusahaan partner.</h1>
+            <p class="mt-3 text-[#6B7E94]">Listing di halaman ini dikirim oleh perusahaan partner untuk universitas Anda. Setujui agar tampil ke mahasiswa.</p>
         </div>
-        @if (auth()->user()->hasRole('staf') || auth()->user()->hasRole('perusahaan'))
-            <button type="button" data-modal-target="#offer-create-modal" class="cb-primary inline-flex px-5 py-3 text-sm">Buat Lowongan</button>
-        @endif
     </div>
 
     <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
@@ -38,24 +35,9 @@
                 <p class="mt-5 text-sm font-semibold text-[#0D1B2A]">Batas: {{ $offer->batas_lamaran?->translatedFormat('d F Y') ?? 'Belum ditentukan' }}</p>
             </a>
         @empty
-            <div class="cb-card border-dashed p-10 text-center text-[#6B7E94] md:col-span-2 xl:col-span-3">Belum ada lowongan magang.</div>
+            <div class="cb-card border-dashed p-10 text-center text-[#6B7E94] md:col-span-2 xl:col-span-3">Belum ada listing magang dari perusahaan partner.</div>
         @endforelse
     </div>
 
     <div class="mt-6">{{ $offers->links() }}</div>
-
-    @if (auth()->user()->hasRole('staf') || auth()->user()->hasRole('perusahaan'))
-        @component('partials.modal-shell', [
-            'id' => 'offer-create-modal',
-            'title' => 'Buat lowongan magang',
-            'eyebrow' => 'Lowongan Baru',
-            'description' => 'Lengkapi detail posisi dan pilih kampus partner tujuan.',
-            'width' => 'max-w-5xl',
-            'open' => session('open_modal') === 'offer-create-modal' || $errors->any(),
-        ])
-            <form method="POST" action="{{ route('offers.store') }}">
-                @include('offers._form')
-            </form>
-        @endcomponent
-    @endif
 @endsection

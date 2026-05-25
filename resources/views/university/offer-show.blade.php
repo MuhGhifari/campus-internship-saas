@@ -59,7 +59,7 @@
             </div>
             <h2 class="mt-5 font-bold text-[#0D1B2A]">Ringkasan alur</h2>
             <p class="mt-2 text-sm leading-6 text-[#6B7E94]">Lowongan ini hanya terlihat oleh mahasiswa kampus yang sudah menyetujui permintaan posisi.</p>
-            @if (auth()->user()->hasRole('staf') || auth()->user()->hasRole('perusahaan'))
+            @if (auth()->user()->hasRole('staf'))
                 <a href="{{ route('offers.edit', $offer) }}" class="cb-primary mt-5 inline-flex px-5 py-3 text-sm">Ubah Lowongan</a>
             @endif
         </aside>
@@ -85,7 +85,7 @@
                 </div>
             </article>
 
-            @if (auth()->user()->hasRole('staf') || auth()->user()->hasRole('perusahaan'))
+            @if (auth()->user()->hasRole('perusahaan'))
                 <article class="cb-card p-6 lg:p-8">
                     <div class="flex flex-wrap items-center justify-between gap-3">
                         <div>
@@ -105,60 +105,7 @@
                                     </div>
                                     <span class="rounded-full bg-white px-3 py-1 text-xs font-semibold text-[#0D1B2A]">{{ $statusLabels[$application->status] ?? ucfirst($application->status) }}</span>
                                 </div>
-
-                                <button type="button" data-modal-target="#application-update-{{ $application->id }}" class="cb-dark-button mt-4 px-4 py-2 text-sm">Perbarui Lamaran</button>
                             </div>
-
-                            @component('partials.modal-shell', [
-                                'id' => 'application-update-'.$application->id,
-                                'title' => 'Perbarui lamaran '.$application->student->name,
-                                'eyebrow' => 'Kandidat',
-                                'description' => $application->offer->judul,
-                            ])
-                                <form method="POST" action="{{ route('applications.update', $application) }}" class="grid gap-4">
-                                    @csrf
-                                    @method('PATCH')
-                                    <div class="grid gap-4 lg:grid-cols-2">
-                                        <label class="block">
-                                            <span class="text-sm font-medium">Status</span>
-                                            <select name="status" class="cb-input mt-2 text-sm">
-                                                @foreach (['diajukan','diseleksi','wawancara','diterima','ditolak','berjalan','selesai'] as $status)
-                                                    <option value="{{ $status }}" @selected($application->status === $status)>{{ $statusLabels[$status] }}</option>
-                                                @endforeach
-                                            </select>
-                                        </label>
-                                        <label class="block">
-                                            <span class="text-sm font-medium">Pembimbing kampus</span>
-                                            <select name="campus_supervisor_id" class="cb-input mt-2 text-sm">
-                                                <option value="">Pilih pembimbing kampus</option>
-                                                @foreach ($lecturers as $lecturer)
-                                                    <option value="{{ $lecturer->id }}" @selected($application->campus_supervisor_id === $lecturer->id)>{{ $lecturer->name }}</option>
-                                                @endforeach
-                                            </select>
-                                        </label>
-                                        <label class="block">
-                                            <span class="text-sm font-medium">Penanggung jawab perusahaan</span>
-                                            <select name="company_supervisor_id" class="cb-input mt-2 text-sm">
-                                                <option value="">Pilih penanggung jawab</option>
-                                                @foreach ($companySupervisors as $supervisor)
-                                                    <option value="{{ $supervisor->id }}" @selected($application->company_supervisor_id === $supervisor->id)>{{ $supervisor->name }}</option>
-                                                @endforeach
-                                            </select>
-                                        </label>
-                                        <div class="grid gap-3 sm:grid-cols-2">
-                                            <label class="block">
-                                                <span class="text-sm font-medium">Mulai</span>
-                                                <input name="tanggal_mulai" type="date" value="{{ $application->tanggal_mulai?->format('Y-m-d') }}" class="cb-input mt-2 text-sm">
-                                            </label>
-                                            <label class="block">
-                                                <span class="text-sm font-medium">Selesai</span>
-                                                <input name="tanggal_selesai" type="date" value="{{ $application->tanggal_selesai?->format('Y-m-d') }}" class="cb-input mt-2 text-sm">
-                                            </label>
-                                        </div>
-                                    </div>
-                                    <button class="cb-dark-button px-4 py-3 text-sm">Simpan Perubahan</button>
-                                </form>
-                            @endcomponent
                         @empty
                             <div class="rounded-lg border border-dashed border-[#0D1B2A]/20 bg-[#F7F3ED] p-8 text-center text-sm text-[#6B7E94]">Belum ada mahasiswa yang melamar posisi ini.</div>
                         @endforelse

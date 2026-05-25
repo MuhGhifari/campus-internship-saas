@@ -18,6 +18,7 @@ class EvaluationController extends Controller
             'applications' => InternshipApplication::with(['offer.company', 'student', 'campusSupervisor', 'companySupervisor', 'evaluation'])
                 ->whereIn('status', ['berjalan', 'selesai', 'diterima'])
                 ->when($user->hasRole('dosen'), fn ($query) => $query->where('campus_supervisor_id', $user->id))
+                ->when($user->hasRole('company_supervisor'), fn ($query) => $query->where('company_supervisor_id', $user->id))
                 ->when($user->hasRole('perusahaan'), fn ($query) => $query->whereHas('offer', fn ($offer) => $offer->where('company_id', $user->company_id)))
                 ->when($user->hasRole('staf'), fn ($query) => $query->whereHas('offer.universityRequests', fn ($offerRequest) => $offerRequest->where('university_id', $user->university_id)))
                 ->when($user->hasRole('mahasiswa'), fn ($query) => $query->where('student_id', $user->id))
@@ -31,7 +32,7 @@ class EvaluationController extends Controller
         $user = $request->user();
         abort_unless(
             ($user->hasRole('dosen') && $application->campus_supervisor_id === $user->id) ||
-            ($user->hasRole('perusahaan') && $application->offer->company_id === $user->company_id),
+            ($user->hasRole('company_supervisor') && $application->company_supervisor_id === $user->id),
             403
         );
 
@@ -48,6 +49,15 @@ class EvaluationController extends Controller
             'evaluator_id' => $user->id,
             'tipe' => $user->hasRole('dosen') ? 'kampus' : 'perusahaan',
         ], $attributes);
+
+        $application->load(['student', 'offer']);
+        $this->notifyUsers(
+            [$application->student],
+            'Evaluasi magang diperbarui',
+            $user->name.' menyimpan evaluasi untuk program "'.$application->offer->judul.'".',
+            route('evaluations.index'),
+            'Lihat Evaluasi'
+        );
 
         return back()->with('success', 'Evaluasi magang berhasil disimpan.');
     }

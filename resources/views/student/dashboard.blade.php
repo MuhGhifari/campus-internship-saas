@@ -9,7 +9,7 @@
             $user->hasRole('staf') => ['Konsol Universitas', 'Pantau kemitraan, lowongan, dan hasil magang kampus.', 'university', route('partnerships.index'), 'Tinjau Kemitraan'],
             $user->hasRole('perusahaan') => ['Portal Perusahaan', 'Bangun jalur talenta dari kampus partner.', 'company', route('partnerships.index'), 'Ajukan Kemitraan'],
             $user->hasRole('mahasiswa') => ['Ruang Mahasiswa', 'Temukan lowongan resmi dan pantau lamaranmu.', 'student', route('offers.index'), 'Cari Lowongan'],
-            default => ['Meja Pembimbing', 'Tinjau catatan harian dan evaluasi mahasiswa bimbingan.', 'mentor', route('logbooks.index'), 'Tinjau Catatan'],
+            default => ['Meja Pembimbing', 'Tinjau tugas dan evaluasi mahasiswa bimbingan.', 'mentor', route('logbooks.index'), 'Tinjau Tugas'],
         };
     @endphp
 

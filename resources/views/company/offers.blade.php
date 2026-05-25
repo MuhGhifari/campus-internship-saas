@@ -1,17 +1,15 @@
 @extends('layouts.app')
 
-@section('title', 'Lowongan Magang - CareerBridge')
+@section('title', 'Kelola Magang - CareerBridge')
 
 @section('content')
     <div class="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-            <p class="cb-section-label">Lowongan</p>
-            <h1 class="cb-display mt-3 text-5xl font-light text-[#0D1B2A]">Peluang magang resmi dari jaringan partner.</h1>
-            <p class="mt-3 text-[#6B7E94]">Setiap posisi melewati tinjauan universitas sebelum tampil ke mahasiswa.</p>
+            <p class="cb-section-label">Magang</p>
+            <h1 class="cb-display mt-3 text-5xl font-light text-[#0D1B2A]">Buat dan kelola posisi magang.</h1>
+            <p class="mt-3 text-[#6B7E94]">Pilih kampus partner tujuan, pantau status review universitas, dan buka detail aplikasi kandidat.</p>
         </div>
-        @if (auth()->user()->hasRole('staf') || auth()->user()->hasRole('perusahaan'))
-            <button type="button" data-modal-target="#offer-create-modal" class="cb-primary inline-flex px-5 py-3 text-sm">Buat Lowongan</button>
-        @endif
+        <button type="button" data-modal-target="#offer-create-modal" class="cb-primary inline-flex px-5 py-3 text-sm">Buat Posisi Magang</button>
     </div>
 
     <div class="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
@@ -44,18 +42,16 @@
 
     <div class="mt-6">{{ $offers->links() }}</div>
 
-    @if (auth()->user()->hasRole('staf') || auth()->user()->hasRole('perusahaan'))
-        @component('partials.modal-shell', [
-            'id' => 'offer-create-modal',
-            'title' => 'Buat lowongan magang',
-            'eyebrow' => 'Lowongan Baru',
-            'description' => 'Lengkapi detail posisi dan pilih kampus partner tujuan.',
-            'width' => 'max-w-5xl',
-            'open' => session('open_modal') === 'offer-create-modal' || $errors->any(),
-        ])
-            <form method="POST" action="{{ route('offers.store') }}">
-                @include('offers._form')
-            </form>
-        @endcomponent
-    @endif
+    @component('partials.modal-shell', [
+        'id' => 'offer-create-modal',
+        'title' => 'Buat posisi magang',
+        'eyebrow' => 'Posisi Baru',
+        'description' => 'Lengkapi detail posisi dan pilih kampus partner tujuan.',
+        'width' => 'max-w-5xl',
+        'open' => session('open_modal') === 'offer-create-modal' || $errors->any(),
+    ])
+        <form method="POST" action="{{ route('offers.store') }}">
+            @include('offers._form')
+        </form>
+    @endcomponent
 @endsection

@@ -65,8 +65,38 @@ class User extends Authenticatable
         return $this->hasMany(InternshipApplication::class, 'campus_supervisor_id');
     }
 
+    public function supervisedCompanyApplications(): HasMany
+    {
+        return $this->hasMany(InternshipApplication::class, 'company_supervisor_id');
+    }
+
+    public function assignedTasks(): HasMany
+    {
+        return $this->hasMany(LogbookEntry::class, 'assigned_by_id');
+    }
+
     public function hasRole(string $role): bool
     {
-        return $this->role === $role;
+        $aliases = [
+            'dosen' => ['dosen', 'university_supervisor'],
+            'university_supervisor' => ['university_supervisor', 'dosen'],
+        ];
+
+        return in_array($this->role, $aliases[$role] ?? [$role], true);
+    }
+
+    public function hasAnyRole(array $roles): bool
+    {
+        return collect($roles)->contains(fn (string $role) => $this->hasRole($role));
+    }
+
+    public function isInstitutionUser(): bool
+    {
+        return $this->hasAnyRole(['staf', 'perusahaan']);
+    }
+
+    public function isSupervisor(): bool
+    {
+        return $this->hasAnyRole(['company_supervisor', 'university_supervisor']);
     }
 }

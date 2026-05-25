@@ -22,20 +22,28 @@ class LogbookEntryFactory extends Factory
         return [
             'internship_application_id' => InternshipApplication::factory(),
             'student_id' => User::factory(),
+            'assigned_by_id' => User::factory(),
             'tanggal' => now()->subDay()->toDateString(),
+            'due_date' => now()->addWeek()->toDateString(),
             'judul_kegiatan' => $this->faker->sentence(4),
             'deskripsi' => $this->faker->paragraph(),
             'kendala' => $this->faker->optional()->sentence(),
-            'status' => 'menunggu',
+            'status' => 'todo',
             'catatan_pembimbing' => null,
+            'score' => null,
+            'score_notes' => null,
+            'completed_at' => null,
         ];
     }
 
     public function approved(): static
     {
         return $this->state(fn (array $attributes) => [
-            'status' => 'disetujui',
+            'status' => 'done',
+            'score' => 88,
+            'score_notes' => 'Pekerjaan selesai dengan dokumentasi yang jelas.',
             'catatan_pembimbing' => 'Progres baik, lanjutkan dokumentasi pekerjaan.',
+            'completed_at' => now(),
         ]);
     }
 }

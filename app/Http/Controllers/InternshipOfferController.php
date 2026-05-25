@@ -32,7 +32,7 @@ class InternshipOfferController extends Controller
                 ->paginate(9),
         ];
 
-        if ($user->hasRole('staf') || $user->hasRole('perusahaan')) {
+        if ($user->hasRole('perusahaan')) {
             $data = [...$data, ...$this->formData($request)];
         }
 
@@ -41,14 +41,14 @@ class InternshipOfferController extends Controller
 
     public function create(Request $request): RedirectResponse
     {
-        abort_unless($request->user()->hasRole('staf') || $request->user()->hasRole('perusahaan'), 403);
+        abort_unless($request->user()->hasRole('perusahaan'), 403);
 
         return redirect()->route('offers.index')->with('open_modal', 'offer-create-modal');
     }
 
     public function store(Request $request): RedirectResponse
     {
-        abort_unless($request->user()->hasRole('staf') || $request->user()->hasRole('perusahaan'), 403);
+        abort_unless($request->user()->hasRole('perusahaan'), 403);
 
         $attributes = $this->validatedOffer($request);
         $user = $request->user();
@@ -62,6 +62,14 @@ class InternshipOfferController extends Controller
 
         $this->syncUniversityRequests($offer, $request, $user);
 
+        $this->notifyUsers(
+            User::whereIn('university_id', $offer->universityRequests()->pluck('university_id'))->where('role', 'staf')->get(),
+            'Lowongan magang baru perlu ditinjau',
+            $offer->company->nama.' mengirim lowongan "'.$offer->judul.'" ke universitas Anda.',
+            route('offers.show', $offer),
+            'Tinjau Lowongan'
+        );
+
         return redirect()->route('offers.show', $offer)->with('success', 'Lowongan magang berhasil dibuat dan dikirim ke universitas tujuan.');
     }
 
@@ -70,15 +78,26 @@ class InternshipOfferController extends Controller
         $user = $request->user();
         abort_unless(
             ($user->hasRole('perusahaan') && $offer->company_id === $user->company_id) ||
+            ($user->hasRole('company_supervisor') && $offer->applications()->where('company_supervisor_id', $user->id)->exists()) ||
+            ($user->hasRole('university_supervisor') && $offer->applications()->where('campus_supervisor_id', $user->id)->exists()) ||
             ($user->hasRole('staf') && $offer->universityRequests()->where('university_id', $user->university_id)->exists()) ||
             ($user->hasRole('mahasiswa') && $offer->universityRequests()->where('university_id', $user->university_id)->where('status', 'diterima')->exists()),
             403
         );
 
+        $offer->load([
+            'company',
+            'universityRequests.university',
+            'applications' => fn ($query) => $query
+                ->with(['student', 'campusSupervisor', 'companySupervisor'])
+                ->when($user->hasRole('company_supervisor'), fn ($application) => $application->where('company_supervisor_id', $user->id))
+                ->when($user->hasRole('university_supervisor'), fn ($application) => $application->where('campus_supervisor_id', $user->id)),
+        ]);
+
         return $this->workspaceView($request, 'offer-show', [
-            'offer' => $offer->load(['company', 'applications.student', 'applications.campusSupervisor', 'universityRequests.university']),
-            'lecturers' => User::where('university_id', $request->user()->university_id)->where('role', 'dosen')->orderBy('name')->get(),
-            'companySupervisors' => User::where('company_id', $offer->company_id)->where('role', 'perusahaan')->orderBy('name')->get(),
+            'offer' => $offer,
+            'lecturers' => User::whereIn('university_id', $offer->universityRequests()->pluck('university_id'))->whereIn('role', ['university_supervisor', 'dosen'])->orderBy('name')->get(),
+            'companySupervisors' => User::where('company_id', $offer->company_id)->where('role', 'company_supervisor')->orderBy('name')->get(),
         ]);
     }
 
@@ -105,6 +124,14 @@ class InternshipOfferController extends Controller
 
         $offer->update($attributes);
         $this->syncUniversityRequests($offer, $request, $request->user());
+
+        $this->notifyUsers(
+            User::whereIn('university_id', $offer->universityRequests()->pluck('university_id'))->where('role', 'staf')->get(),
+            'Lowongan magang diperbarui',
+            $offer->company->nama.' memperbarui lowongan "'.$offer->judul.'".',
+            route('offers.show', $offer),
+            'Lihat Lowongan'
+        );
 
         return redirect()->route('offers.show', $offer)->with('success', 'Lowongan magang berhasil diperbarui.');
     }
@@ -135,6 +162,25 @@ class InternshipOfferController extends Controller
 
         if ($attributes['status'] === 'diterima') {
             $offerRequest->offer->update(['status' => 'terbit']);
+        }
+
+        $offerRequest->load(['offer.company', 'university']);
+        $this->notifyUsers(
+            User::where('company_id', $offerRequest->offer->company_id)->where('role', 'perusahaan')->get(),
+            'Status review lowongan diperbarui',
+            $offerRequest->university->nama.' '.$attributes['status'].' lowongan "'.$offerRequest->offer->judul.'".',
+            route('offers.show', $offerRequest->offer),
+            'Lihat Lowongan'
+        );
+
+        if ($attributes['status'] === 'diterima') {
+            $this->notifyUsers(
+                User::where('university_id', $offerRequest->university_id)->where('role', 'mahasiswa')->get(),
+                'Lowongan magang baru tersedia',
+                'Lowongan "'.$offerRequest->offer->judul.'" dari '.$offerRequest->offer->company->nama.' sekarang tersedia untuk kampus Anda.',
+                route('offers.show', $offerRequest->offer),
+                'Lihat Lowongan'
+            );
         }
 
         return back()->with('success', 'Status review posisi berhasil diperbarui.');
@@ -183,12 +229,6 @@ class InternshipOfferController extends Controller
 
         if ($user->hasRole('perusahaan')) {
             return $offer->company_id === $user->company_id;
-        }
-
-        if ($user->hasRole('staf')) {
-            return $offer->universityRequests()
-                ->where('university_id', $user->university_id)
-                ->exists();
         }
 
         return false;

@@ -13,17 +13,27 @@ class LogbookEntry extends Model
     protected $fillable = [
         'internship_application_id',
         'student_id',
+        'assigned_by_id',
         'tanggal',
+        'due_date',
         'judul_kegiatan',
         'deskripsi',
         'kendala',
         'status',
         'catatan_pembimbing',
+        'score',
+        'score_notes',
+        'completed_at',
     ];
 
     protected function casts(): array
     {
-        return ['tanggal' => 'date'];
+        return [
+            'tanggal' => 'date',
+            'due_date' => 'date',
+            'completed_at' => 'datetime',
+            'score' => 'integer',
+        ];
     }
 
     public function application(): BelongsTo
@@ -34,5 +44,10 @@ class LogbookEntry extends Model
     public function student(): BelongsTo
     {
         return $this->belongsTo(User::class, 'student_id');
+    }
+
+    public function assignedBy(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_by_id');
     }
 }

@@ -52,8 +52,9 @@
                     <div class="mt-3 space-y-1">
                         <p>staf@careerbridge.test / password</p>
                         <p>hr@careerbridge.test / password</p>
+                        <p>pj-perusahaan@careerbridge.test / password</p>
                         <p>mahasiswa@careerbridge.test / password</p>
-                        <p>dosen@careerbridge.test / password</p>
+                        <p>pembimbing-kampus@careerbridge.test / password</p>
                     </div>
                 </div>
             </section>

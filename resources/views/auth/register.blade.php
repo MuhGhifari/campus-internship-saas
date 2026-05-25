@@ -177,6 +177,7 @@
                     if (title) title.textContent = copy[selected].title;
                     if (description) description.textContent = copy[selected].description;
                     if (submit) submit.textContent = copy[selected].submit;
+                    window.CareerBridgeRefreshFields?.();
                 };
 
                 radios.forEach((radio) => radio.addEventListener('change', sync));

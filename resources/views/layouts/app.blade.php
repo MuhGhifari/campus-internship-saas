@@ -22,7 +22,8 @@
             'mahasiswa' => 'student.app',
             'staf' => 'university.app',
             'perusahaan' => 'company.app',
-            'dosen' => 'professor.app',
+            'company_supervisor' => 'company_supervisor.app',
+            'university_supervisor', 'dosen' => 'university_supervisor.app',
             default => 'student.app',
         })
     @endguest

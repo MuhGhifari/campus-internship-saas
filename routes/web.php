@@ -7,7 +7,10 @@ use App\Http\Controllers\EvaluationController;
 use App\Http\Controllers\InternshipApplicationController;
 use App\Http\Controllers\InternshipOfferController;
 use App\Http\Controllers\LogbookEntryController;
+use App\Http\Controllers\PartnerDirectoryController;
 use App\Http\Controllers\PartnershipController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\SupervisorUserController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -24,6 +27,13 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::post('/keluar', [LoginController::class, 'destroy'])->name('logout');
     Route::get('/dashboard', DashboardController::class)->name('dashboard');
+    Route::get('/profil', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profil', [ProfileController::class, 'update'])->name('profile.update');
+    Route::get('/pembimbing', [SupervisorUserController::class, 'index'])->name('supervisors.index');
+    Route::post('/pembimbing', [SupervisorUserController::class, 'store'])->name('supervisors.store');
+
+    Route::get('/jelajah-perusahaan', [PartnerDirectoryController::class, 'companies'])->name('directories.companies');
+    Route::get('/jelajah-universitas', [PartnerDirectoryController::class, 'universities'])->name('directories.universities');
 
     Route::get('/kemitraan', [PartnershipController::class, 'index'])->name('partnerships.index');
     Route::post('/kemitraan', [PartnershipController::class, 'store'])->name('partnerships.store');
@@ -38,9 +48,9 @@ Route::middleware('auth')->group(function () {
     Route::post('/lowongan/{offer}/lamar', [InternshipApplicationController::class, 'store'])->name('applications.store');
     Route::patch('/lamaran/{application}', [InternshipApplicationController::class, 'update'])->name('applications.update');
 
-    Route::get('/logbook', [LogbookEntryController::class, 'index'])->name('logbooks.index');
-    Route::post('/logbook', [LogbookEntryController::class, 'store'])->name('logbooks.store');
-    Route::patch('/logbook/{logbook}', [LogbookEntryController::class, 'update'])->name('logbooks.update');
+    Route::get('/tugas', [LogbookEntryController::class, 'index'])->name('logbooks.index');
+    Route::post('/tugas', [LogbookEntryController::class, 'store'])->name('logbooks.store');
+    Route::patch('/tugas/{logbook}', [LogbookEntryController::class, 'update'])->name('logbooks.update');
 
     Route::get('/evaluasi', [EvaluationController::class, 'index'])->name('evaluations.index');
     Route::post('/lamaran/{application}/evaluasi', [EvaluationController::class, 'store'])->name('evaluations.store');

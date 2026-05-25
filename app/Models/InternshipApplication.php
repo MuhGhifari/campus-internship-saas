@@ -60,6 +60,11 @@ class InternshipApplication extends Model
         return $this->hasMany(LogbookEntry::class);
     }
 
+    public function tasks(): HasMany
+    {
+        return $this->logbooks();
+    }
+
     public function evaluation(): HasOne
     {
         return $this->hasOne(Evaluation::class);

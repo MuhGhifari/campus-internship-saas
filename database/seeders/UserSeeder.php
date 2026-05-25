@@ -35,7 +35,7 @@ class UserSeeder extends Seeder
 
         User::factory()->lecturer($und)->create([
             'name' => 'Prof. Bima Prakoso',
-            'email' => 'dosen@careerbridge.test',
+            'email' => 'pembimbing-kampus@careerbridge.test',
             'nomor_induk' => 'DSN-001',
             'program_studi' => 'Sistem Informasi',
             'telepon' => '081200000002',
@@ -64,6 +64,14 @@ class UserSeeder extends Seeder
             'name' => 'Raka HR Partner',
             'email' => 'hr@careerbridge.test',
             'telepon' => '081200000004',
+            'password' => 'password',
+        ]);
+
+        User::factory()->companySupervisor($awanKarya)->create([
+            'name' => 'Adit Pembimbing Produk',
+            'email' => 'pj-perusahaan@careerbridge.test',
+            'nomor_induk' => 'SPV-001',
+            'telepon' => '081200000008',
             'password' => 'password',
         ]);
 

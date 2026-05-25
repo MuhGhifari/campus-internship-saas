@@ -23,7 +23,7 @@
                     @endif
                 </div>
 
-                @if (auth()->user()->hasRole('dosen') || auth()->user()->hasRole('perusahaan'))
+                @if (auth()->user()->hasRole('dosen') || auth()->user()->hasRole('company_supervisor'))
                     <button type="button" data-modal-target="#evaluation-{{ $application->id }}" class="cb-dark-button mt-6 px-4 py-3 text-sm">Isi Evaluasi</button>
                     @component('partials.modal-shell', [
                         'id' => 'evaluation-'.$application->id,

@@ -1,13 +1,13 @@
 @extends('layouts.app')
 
-@section('title', 'Lowongan Magang - CareerBridge')
+@section('title', 'Cari Magang - CareerBridge')
 
 @section('content')
     <div class="mb-8 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-            <p class="cb-section-label">Lowongan</p>
-            <h1 class="cb-display mt-3 text-5xl font-light text-[#0D1B2A]">Peluang magang resmi dari jaringan partner.</h1>
-            <p class="mt-3 text-[#6B7E94]">Setiap posisi melewati tinjauan universitas sebelum tampil ke mahasiswa.</p>
+            <p class="cb-section-label">Cari Magang</p>
+            <h1 class="cb-display mt-3 text-5xl font-light text-[#0D1B2A]">Magang tersedia dari partner kampus Anda.</h1>
+            <p class="mt-3 text-[#6B7E94]">Semua posisi di sini sudah disetujui universitas Anda dan siap dilamar.</p>
         </div>
     </div>
 

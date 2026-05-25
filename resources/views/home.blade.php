@@ -19,7 +19,7 @@
             </h1>
 
             <p class="cb-reveal cb-delay-2 mx-auto mt-6 max-w-2xl text-base font-light leading-8 text-white/65">
-                CareerBridge mengatur kemitraan, persetujuan lowongan, lamaran CV, penanggung jawab magang, logbook, dan evaluasi akhir dalam satu layanan SaaS.
+                CareerBridge mengatur kemitraan, persetujuan lowongan, lamaran CV, penanggung jawab magang, tugas terpantau, dan evaluasi akhir dalam satu layanan SaaS.
             </p>
 
             <div class="cb-reveal cb-delay-3 mt-12 grid gap-4 md:grid-cols-3">
@@ -87,7 +87,7 @@
                     ['01', 'Pilih Kampus', 'Daftar memakai identitas akademik.'],
                     ['02', 'Cari Lowongan', 'Lihat posisi yang disetujui kampus.'],
                     ['03', 'Kirim CV', 'Ajukan lamaran langsung dari sistem.'],
-                    ['04', 'Isi Logbook', 'Catat progres dan terima evaluasi.'],
+                    ['04', 'Kerjakan Tugas', 'Ubah status tugas dan terima nilai dari PJ perusahaan.'],
                 ],
             ] as $key => $steps)
                 <div data-tab-panel="{{ $key }}" @if ($key !== 'perusahaan') hidden @endif class="grid gap-6 md:grid-cols-2 xl:grid-cols-4 xl:gap-8">
@@ -117,7 +117,7 @@
                     ['clipboard', 'Lowongan Terkurasi', 'Posisi hanya tampil untuk mahasiswa setelah disetujui universitas.', 'Mahasiswa'],
                     ['users', 'Seleksi Kandidat', 'HR melihat lamaran, CV, dan status kandidat dalam satu panel.', 'Perusahaan'],
                     ['mentor', 'Penanggung Jawab Magang', 'Setiap mahasiswa punya pembimbing kampus dan perwakilan perusahaan.', 'Pembimbing'],
-                    ['note', 'Catatan Harian', 'Mahasiswa menulis progres, kendala, dan aktivitas magang secara rutin.', 'Mahasiswa'],
+                    ['note', 'Tugas Terpantau', 'PJ perusahaan memberi tugas, mahasiswa memperbarui status, dan nilai tersimpan untuk evaluasi.', 'Mahasiswa & Perusahaan'],
                     ['chart', 'Evaluasi Terpusat', 'Nilai dan catatan akhir tersimpan untuk kebutuhan akademik kampus.', 'Universitas'],
                 ] as [$icon, $title, $desc, $tag])
                     <article class="cb-scroll-reveal cb-scroll-delay-{{ ($loop->iteration - 1) % 3 + 1 }} rounded-lg border border-[#0D1B2A]/10 bg-white p-8 transition hover:-translate-y-1 hover:border-[#E8A020] hover:shadow-xl">

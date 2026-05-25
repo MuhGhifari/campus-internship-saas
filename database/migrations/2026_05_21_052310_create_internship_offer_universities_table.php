@@ -22,7 +22,7 @@ return new class extends Migration
             $table->timestamp('reviewed_at')->nullable();
             $table->timestamps();
 
-            $table->unique(['internship_offer_id', 'university_id']);
+            $table->unique(['internship_offer_id', 'university_id'], 'offer_university_unique');
         });
     }
 
