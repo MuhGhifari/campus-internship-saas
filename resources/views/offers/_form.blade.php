@@ -14,31 +14,13 @@
                 @include('partials.icon', ['name' => 'company', 'class' => 'h-5 w-5'])
             </span>
             <div>
-                <h2 class="font-bold text-[#0D1B2A]">Tujuan dan status</h2>
-                <p class="text-sm text-[#6B7E94]">Pilih perusahaan pengirim dan kampus partner yang akan meninjau posisi ini.</p>
+                <h2 class="font-bold text-[#0D1B2A]">Tujuan review kampus</h2>
+                <p class="text-sm text-[#6B7E94]">Lowongan otomatis dibuat atas nama {{ $company?->nama ?? 'perusahaan Anda' }} dan masuk status Menunggu Tinjauan.</p>
             </div>
         </div>
 
-        <div class="grid gap-4 lg:grid-cols-2">
-            <label class="block">
-                <span class="text-sm font-semibold text-[#0D1B2A]">Perusahaan</span>
-                <select name="company_id" required class="cb-input mt-2">
-                    @foreach ($companies as $company)
-                        <option value="{{ $company->id }}" @selected(old('company_id', $offer->company_id ?? auth()->user()->company_id) == $company->id)>
-                            {{ $company->nama }}
-                        </option>
-                    @endforeach
-                </select>
-            </label>
-
-            <label class="block">
-                <span class="text-sm font-semibold text-[#0D1B2A]">Status publikasi</span>
-                <select name="status" class="cb-input mt-2">
-                    @foreach (['draft' => 'Draf', 'menunggu' => 'Menunggu Tinjauan', 'terbit' => 'Terbit', 'ditutup' => 'Ditutup'] as $value => $label)
-                        <option value="{{ $value }}" @selected(old('status', $offer->status ?? 'menunggu') === $value)>{{ $label }}</option>
-                    @endforeach
-                </select>
-            </label>
+        <div class="rounded-lg border border-[#0D1B2A]/10 bg-[#FDF3DC] p-4 text-sm text-[#0D1B2A]">
+            Status lowongan ditentukan sistem: setelah dikirim menjadi <strong>Menunggu Tinjauan</strong>, lalu berubah menjadi <strong>Terbit</strong> setelah universitas menyetujui.
         </div>
 
         <div class="mt-5">

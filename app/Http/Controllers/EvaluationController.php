@@ -15,7 +15,7 @@ class EvaluationController extends Controller
         $user = $request->user();
 
         return $this->workspaceView($request, 'evaluations', [
-            'applications' => InternshipApplication::with(['offer.company', 'student', 'campusSupervisor', 'companySupervisor', 'evaluation'])
+            'applications' => InternshipApplication::with(['offer.company', 'student', 'campusSupervisor', 'companySupervisor', 'companyEvaluation'])
                 ->whereIn('status', ['berjalan', 'selesai', 'diterima'])
                 ->when($user->hasRole('dosen'), fn ($query) => $query->where('campus_supervisor_id', $user->id))
                 ->when($user->hasRole('company_supervisor'), fn ($query) => $query->where('company_supervisor_id', $user->id))
@@ -31,7 +31,6 @@ class EvaluationController extends Controller
     {
         $user = $request->user();
         abort_unless(
-            ($user->hasRole('dosen') && $application->campus_supervisor_id === $user->id) ||
             ($user->hasRole('company_supervisor') && $application->company_supervisor_id === $user->id),
             403
         );
@@ -47,7 +46,7 @@ class EvaluationController extends Controller
         Evaluation::updateOrCreate([
             'internship_application_id' => $application->id,
             'evaluator_id' => $user->id,
-            'tipe' => $user->hasRole('dosen') ? 'kampus' : 'perusahaan',
+            'tipe' => 'perusahaan',
         ], $attributes);
 
         $application->load(['student', 'offer']);

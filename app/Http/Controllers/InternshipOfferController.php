@@ -55,9 +55,9 @@ class InternshipOfferController extends Controller
 
         $offer = InternshipOffer::create([
             ...$attributes,
-            'company_id' => $user->company_id ?: $attributes['company_id'],
+            'company_id' => $user->company_id,
             'created_by' => $user->id,
-            'status' => $user->hasRole('perusahaan') ? 'menunggu' : $attributes['status'],
+            'status' => 'menunggu',
         ]);
 
         $this->syncUniversityRequests($offer, $request, $user);
@@ -98,16 +98,7 @@ class InternshipOfferController extends Controller
             'offer' => $offer,
             'lecturers' => User::whereIn('university_id', $offer->universityRequests()->pluck('university_id'))->whereIn('role', ['university_supervisor', 'dosen'])->orderBy('name')->get(),
             'companySupervisors' => User::where('company_id', $offer->company_id)->where('role', 'company_supervisor')->orderBy('name')->get(),
-        ]);
-    }
-
-    public function edit(Request $request, InternshipOffer $offer): View
-    {
-        abort_unless($this->canManageOffer($request, $offer), 403);
-
-        return $this->workspaceView($request, 'offer-edit', [
-            'offer' => $offer,
-            ...$this->formData($request, $offer),
+            ...($user->hasRole('perusahaan') ? $this->formData($request, $offer) : []),
         ]);
     }
 
@@ -189,7 +180,6 @@ class InternshipOfferController extends Controller
     private function validatedOffer(Request $request): array
     {
         return $request->validate([
-            'company_id' => ['required', 'exists:companies,id'],
             'university_ids' => ['required', 'array', 'min:1'],
             'university_ids.*' => ['exists:universities,id'],
             'judul' => ['required', 'string', 'max:255'],
@@ -203,7 +193,6 @@ class InternshipOfferController extends Controller
             'deskripsi' => ['required', 'string'],
             'persyaratan' => ['nullable', 'string'],
             'benefit' => ['nullable', 'string'],
-            'status' => ['required', 'in:draft,menunggu,terbit,ditutup'],
         ]);
     }
 
@@ -213,9 +202,7 @@ class InternshipOfferController extends Controller
         $companyId = $user->company_id ?: $offer?->company_id;
 
         return [
-            'companies' => $user->hasRole('perusahaan')
-                ? Company::where('id', $user->company_id)->get()
-                : Company::orderBy('nama')->get(),
+            'company' => $user->company,
             'universities' => $companyId
                 ? University::whereHas('partneredCompanies', fn ($query) => $query->where('companies.id', $companyId)->where('company_partnerships.status', 'diterima'))->orderBy('nama')->get()
                 : University::orderBy('nama')->get(),

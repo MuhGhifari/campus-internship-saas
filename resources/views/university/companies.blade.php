@@ -48,16 +48,30 @@
                 <p class="mt-4 text-sm leading-6 text-[#6B7E94]">{{ $company->alamat ?: 'Alamat belum dicantumkan.' }}</p>
 
                 @if (! $partnership || $partnership->status === 'ditolak')
-                    <form method="POST" action="{{ route('partnerships.store') }}" class="mt-5">
-                        @csrf
-                        <input type="hidden" name="company_id" value="{{ $company->id }}">
-                        <input type="hidden" name="pesan" value="Universitas kami tertarik menjalin kerja sama magang dengan perusahaan Anda.">
-                        <button class="cb-primary w-full px-4 py-3 text-sm">Kirim Proposal</button>
-                    </form>
+                    <button type="button" data-modal-target="#proposal-company-{{ $company->id }}" class="cb-primary mt-5 w-full px-4 py-3 text-sm">Buka Proposal</button>
                 @else
                     <a href="{{ route('partnerships.index') }}" class="mt-5 inline-flex w-full items-center justify-center rounded-lg border border-[#0D1B2A]/15 px-4 py-3 text-sm font-bold text-[#0D1B2A] hover:bg-[#F7F3ED]">Lihat Kemitraan</a>
                 @endif
             </article>
+
+            @if (! $partnership || $partnership->status === 'ditolak')
+                @component('partials.modal-shell', [
+                    'id' => 'proposal-company-'.$company->id,
+                    'title' => 'Kirim proposal ke '.$company->nama,
+                    'eyebrow' => 'Proposal Kemitraan',
+                    'description' => 'Tulis konteks kerja sama sebelum proposal dikirim ke perusahaan.',
+                ])
+                    <form method="POST" action="{{ route('partnerships.store') }}" class="grid gap-4">
+                        @csrf
+                        <input type="hidden" name="company_id" value="{{ $company->id }}">
+                        <label class="block">
+                            <span class="text-sm font-medium">Pesan proposal</span>
+                            <textarea name="pesan" rows="5" required class="cb-input mt-2">Universitas kami tertarik menjalin kerja sama magang dengan {{ $company->nama }}.</textarea>
+                        </label>
+                        <button class="cb-dark-button px-4 py-3 text-sm">Kirim Proposal</button>
+                    </form>
+                @endcomponent
+            @endif
         @empty
             <div class="cb-card border-dashed p-10 text-center text-[#6B7E94] md:col-span-2 xl:col-span-3">Tidak ada perusahaan yang cocok.</div>
         @endforelse

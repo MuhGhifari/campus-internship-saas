@@ -7,6 +7,7 @@ use App\Models\InternshipOffer;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class InternshipApplicationController extends Controller
@@ -24,6 +25,9 @@ class InternshipApplicationController extends Controller
                 ->when($user->hasRole('staf'), fn ($query) => $query->whereHas('offer.universityRequests', fn ($offerRequest) => $offerRequest->where('university_id', $user->university_id)))
                 ->latest()
                 ->paginate(10),
+            'lecturers' => $user->hasRole('staf')
+                ? User::where('university_id', $user->university_id)->whereIn('role', ['university_supervisor', 'dosen'])->orderBy('name')->get()
+                : collect(),
         ]);
     }
 
@@ -38,8 +42,12 @@ class InternshipApplicationController extends Controller
 
         $attributes = $request->validate([
             'motivasi' => ['required', 'string', 'min:20'],
-            'resume' => ['nullable', 'file', 'mimes:pdf,doc,docx', 'max:4096'],
-            'surat_pengantar' => ['nullable', 'file', 'mimes:pdf,doc,docx', 'max:4096'],
+            'resume' => ['nullable', 'file', 'mimes:pdf,doc,docx,jpg,jpeg,png', 'max:4096'],
+            'surat_pengantar' => ['nullable', 'file', 'mimes:pdf,doc,docx,jpg,jpeg,png', 'max:4096'],
+        ], [
+            'motivasi.min' => 'Motivasi minimal harus berisi 20 karakter.',
+            'resume.mimes' => 'CV harus berupa PDF, Word, JPG, atau PNG.',
+            'surat_pengantar.mimes' => 'Surat pengantar harus berupa PDF, Word, JPG, atau PNG.',
         ]);
 
         $application = InternshipApplication::create([
@@ -65,31 +73,32 @@ class InternshipApplicationController extends Controller
     public function update(Request $request, InternshipApplication $application): RedirectResponse
     {
         $user = $request->user();
-        abort_unless(
-            $user->hasRole('perusahaan') && $application->offer->company_id === $user->company_id,
-            403
-        );
+
+        if ($user->hasRole('staf')) {
+            return $this->assignCampusSupervisor($request, $application);
+        }
+
+        abort_unless($user->hasRole('perusahaan') && $application->offer->company_id === $user->company_id, 403);
+
+        $supervisorIds = User::where('company_id', $application->offer->company_id)
+            ->where('role', 'company_supervisor')
+            ->pluck('id');
+        $targetNeedsCompanySupervisor = in_array($request->input('status'), ['diterima', 'berjalan', 'selesai'], true)
+            && in_array($application->status, ['diterima', 'berjalan', 'selesai'], true);
 
         $attributes = $request->validate([
             'status' => ['required', 'in:diajukan,diseleksi,wawancara,diterima,ditolak,berjalan,selesai'],
-            'campus_supervisor_id' => ['nullable', 'exists:users,id'],
-            'company_supervisor_id' => ['nullable', 'exists:users,id'],
+            'company_supervisor_id' => [
+                Rule::requiredIf($targetNeedsCompanySupervisor),
+                'nullable',
+                Rule::in($supervisorIds->all()),
+            ],
             'tanggal_mulai' => ['nullable', 'date'],
             'tanggal_selesai' => ['nullable', 'date', 'after_or_equal:tanggal_mulai'],
         ]);
 
-        if (filled($attributes['campus_supervisor_id'] ?? null)) {
-            abort_unless(User::whereKey($attributes['campus_supervisor_id'])
-                ->where('university_id', $application->student->university_id)
-                ->whereIn('role', ['university_supervisor', 'dosen'])
-                ->exists(), 403);
-        }
-
-        if (filled($attributes['company_supervisor_id'] ?? null)) {
-            abort_unless(User::whereKey($attributes['company_supervisor_id'])
-                ->where('company_id', $application->offer->company_id)
-                ->where('role', 'company_supervisor')
-                ->exists(), 403);
+        if (! $targetNeedsCompanySupervisor) {
+            unset($attributes['company_supervisor_id']);
         }
 
         if ($attributes['status'] === 'diterima' && $application->diterima_pada === null) {
@@ -99,14 +108,65 @@ class InternshipApplicationController extends Controller
         $application->update($attributes);
 
         $application->load(['student', 'offer.company', 'campusSupervisor', 'companySupervisor']);
+
+        if ($attributes['status'] === 'diterima') {
+            $this->notifyUsers(
+                [$application->student],
+                'Selamat, lamaran magang Anda diterima',
+                'Lamaran Anda untuk posisi "'.$application->offer->judul.'" di '.$application->offer->company->nama.' sudah diterima. Silakan cek detail periode dan pembimbing di dashboard CareerBridge.',
+                route('applications.index'),
+                'Lihat Lamaran'
+            );
+
+            $this->notifyUsers(
+                [$application->campusSupervisor, $application->companySupervisor],
+                'Mahasiswa bimbingan baru',
+                $application->student->name.' diterima untuk posisi "'.$application->offer->judul.'" di '.$application->offer->company->nama.'.',
+                route('applications.index'),
+                'Lihat Mahasiswa'
+            );
+        } else {
+            $this->notifyUsers(
+                [$application->student, $application->campusSupervisor, $application->companySupervisor],
+                'Status lamaran diperbarui',
+                'Status lamaran '.$application->student->name.' untuk "'.$application->offer->judul.'" berubah menjadi '.$attributes['status'].'.',
+                route('applications.index'),
+                'Lihat Lamaran'
+            );
+        }
+
+        return back()->with('success', 'Status lamaran berhasil diperbarui.');
+    }
+
+    private function assignCampusSupervisor(Request $request, InternshipApplication $application): RedirectResponse
+    {
+        $user = $request->user();
+
+        abort_unless(
+            $application->student->university_id === $user->university_id
+            && $application->offer->universityRequests()->where('university_id', $user->university_id)->exists(),
+            403
+        );
+
+        $lecturerIds = User::where('university_id', $user->university_id)
+            ->whereIn('role', ['university_supervisor', 'dosen'])
+            ->pluck('id');
+
+        $attributes = $request->validate([
+            'campus_supervisor_id' => ['required', Rule::in($lecturerIds->all())],
+        ]);
+
+        $application->update($attributes);
+        $application->load(['student', 'offer.company', 'campusSupervisor']);
+
         $this->notifyUsers(
-            [$application->student, $application->campusSupervisor, $application->companySupervisor],
-            'Status lamaran diperbarui',
-            'Status lamaran '.$application->student->name.' untuk "'.$application->offer->judul.'" berubah menjadi '.$attributes['status'].'.',
+            [$application->student, $application->campusSupervisor],
+            'Pembimbing kampus ditugaskan',
+            $application->campusSupervisor->name.' ditugaskan sebagai pembimbing kampus untuk lamaran '.$application->student->name.'.',
             route('applications.index'),
             'Lihat Lamaran'
         );
 
-        return back()->with('success', 'Status lamaran berhasil diperbarui.');
+        return back()->with('success', 'Pembimbing kampus berhasil ditugaskan.');
     }
 }

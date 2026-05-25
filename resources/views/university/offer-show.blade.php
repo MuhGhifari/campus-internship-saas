@@ -59,9 +59,6 @@
             </div>
             <h2 class="mt-5 font-bold text-[#0D1B2A]">Ringkasan alur</h2>
             <p class="mt-2 text-sm leading-6 text-[#6B7E94]">Lowongan ini hanya terlihat oleh mahasiswa kampus yang sudah menyetujui permintaan posisi.</p>
-            @if (auth()->user()->hasRole('staf'))
-                <a href="{{ route('offers.edit', $offer) }}" class="cb-primary mt-5 inline-flex px-5 py-3 text-sm">Ubah Lowongan</a>
-            @endif
         </aside>
     </div>
 

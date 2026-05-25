@@ -45,13 +45,13 @@ class InternshipApplicationSeeder extends Seeder
 
         Evaluation::factory()->create([
             'internship_application_id' => $application->id,
-            'evaluator_id' => $lecturer->id,
-            'tipe' => 'kampus',
+            'evaluator_id' => $companySupervisor->id,
+            'tipe' => 'perusahaan',
             'nilai_komunikasi' => 86,
             'nilai_kedisiplinan' => 90,
             'nilai_teknis' => 84,
             'nilai_kerja_sama' => 88,
-            'catatan' => 'Mahasiswa aktif melaporkan progres dan mampu menghubungkan pekerjaan dengan capaian pembelajaran.',
+            'catatan' => 'Mahasiswa aktif melaporkan progres, responsif terhadap feedback, dan mampu menyelesaikan task backend dengan rapi.',
         ]);
     }
 }

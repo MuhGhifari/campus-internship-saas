@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Company;
 use App\Models\University;
 use App\Models\User;
+use Illuminate\Database\Eloquent\Factories\Sequence;
 use Illuminate\Database\Seeder;
 
 class UserSeeder extends Seeder
@@ -14,10 +15,13 @@ class UserSeeder extends Seeder
      */
     public function run(): void
     {
-        $und = University::where('kode', 'UND')->firstOrFail();
-        $its = University::where('kode', 'ITS')->firstOrFail();
-        $awanKarya = Company::where('nama', 'PT Awan Karya Teknologi')->firstOrFail();
-        $dataCendekia = Company::where('nama', 'CV Data Cendekia')->firstOrFail();
+        $universities = University::query()->get();
+        $companies = Company::query()->get();
+
+        $und = $universities->firstWhere('kode', 'UND') ?? $universities->firstOrFail();
+        $its = $universities->firstWhere('kode', 'ITS') ?? $universities->skip(1)->first() ?? $und;
+        $awanKarya = $companies->firstWhere('nama', 'PT Awan Karya Teknologi') ?? $companies->firstOrFail();
+        $dataCendekia = $companies->firstWhere('nama', 'CV Data Cendekia') ?? $companies->skip(1)->first() ?? $awanKarya;
 
         User::factory()->staff($und)->create([
             'name' => 'Sinta Career Center',
@@ -81,5 +85,22 @@ class UserSeeder extends Seeder
             'telepon' => '081200000007',
             'password' => 'password',
         ]);
+
+        User::factory()
+            ->count(10)
+            ->sequence(fn (Sequence $sequence) => [
+                'university_id' => $universities[$sequence->index % $universities->count()]->id,
+            ])
+            ->create();
+
+        $universities->each(function (University $university): void {
+            User::factory()->count(2)->student($university)->create();
+            User::factory()->count(1)->lecturer($university)->create();
+        });
+
+        $companies->each(function (Company $company): void {
+            User::factory()->count(1)->companyRepresentative($company)->create();
+            User::factory()->count(2)->companySupervisor($company)->create();
+        });
     }
 }

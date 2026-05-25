@@ -60,7 +60,7 @@
             <h2 class="mt-5 font-bold text-[#0D1B2A]">Ringkasan alur</h2>
             <p class="mt-2 text-sm leading-6 text-[#6B7E94]">Lowongan ini hanya terlihat oleh mahasiswa kampus yang sudah menyetujui permintaan posisi.</p>
             @if (auth()->user()->hasRole('perusahaan'))
-                <a href="{{ route('offers.edit', $offer) }}" class="cb-primary mt-5 inline-flex px-5 py-3 text-sm">Ubah Lowongan</a>
+                <button type="button" data-modal-target="#offer-update-modal" class="cb-primary mt-5 inline-flex px-5 py-3 text-sm">Ubah Lowongan</button>
             @endif
         </aside>
     </div>
@@ -97,6 +97,7 @@
 
                     <div class="mt-6 grid gap-4">
                         @forelse ($offer->applications as $application)
+                            @php($canAssignCompanySupervisor = in_array($application->status, ['diterima', 'berjalan', 'selesai'], true))
                             <div class="rounded-lg border border-[#0D1B2A]/10 bg-[#F7F3ED] p-5">
                                 <div class="flex flex-wrap items-start justify-between gap-3">
                                     <div>
@@ -104,6 +105,15 @@
                                         <p class="text-sm text-[#6B7E94]">{{ $application->student->program_studi }}</p>
                                     </div>
                                     <span class="rounded-full bg-white px-3 py-1 text-xs font-semibold text-[#0D1B2A]">{{ $statusLabels[$application->status] ?? ucfirst($application->status) }}</span>
+                                </div>
+
+                                <div class="mt-4 flex flex-wrap gap-2 text-sm">
+                                    @if ($application->resume_path)
+                                        <a href="{{ Illuminate\Support\Facades\Storage::url($application->resume_path) }}" target="_blank" class="rounded-lg border border-[#0D1B2A]/15 bg-white px-3 py-2 font-semibold text-[#0D1B2A] hover:border-[#E8A020]">Lihat CV</a>
+                                    @endif
+                                    @if ($application->surat_pengantar_path)
+                                        <a href="{{ Illuminate\Support\Facades\Storage::url($application->surat_pengantar_path) }}" target="_blank" class="rounded-lg border border-[#0D1B2A]/15 bg-white px-3 py-2 font-semibold text-[#0D1B2A] hover:border-[#E8A020]">Lihat Surat Pengantar</a>
+                                    @endif
                                 </div>
 
                                 <button type="button" data-modal-target="#application-update-{{ $application->id }}" class="cb-dark-button mt-4 px-4 py-2 text-sm">Perbarui Lamaran</button>
@@ -127,24 +137,21 @@
                                                 @endforeach
                                             </select>
                                         </label>
-                                        <label class="block">
-                                            <span class="text-sm font-medium">Pembimbing kampus</span>
-                                            <select name="campus_supervisor_id" class="cb-input mt-2 text-sm">
-                                                <option value="">Pilih pembimbing kampus</option>
-                                                @foreach ($lecturers as $lecturer)
-                                                    <option value="{{ $lecturer->id }}" @selected($application->campus_supervisor_id === $lecturer->id)>{{ $lecturer->name }}</option>
-                                                @endforeach
-                                            </select>
-                                        </label>
-                                        <label class="block">
-                                            <span class="text-sm font-medium">Penanggung jawab perusahaan</span>
-                                            <select name="company_supervisor_id" class="cb-input mt-2 text-sm">
-                                                <option value="">Pilih penanggung jawab</option>
-                                                @foreach ($companySupervisors as $supervisor)
-                                                    <option value="{{ $supervisor->id }}" @selected($application->company_supervisor_id === $supervisor->id)>{{ $supervisor->name }}</option>
-                                                @endforeach
-                                            </select>
-                                        </label>
+                                        @if ($canAssignCompanySupervisor)
+                                            <label class="block">
+                                                <span class="text-sm font-medium">Penanggung jawab perusahaan</span>
+                                                <select name="company_supervisor_id" class="cb-input mt-2 text-sm" required>
+                                                    <option value="">Pilih penanggung jawab</option>
+                                                    @foreach ($companySupervisors as $supervisor)
+                                                        <option value="{{ $supervisor->id }}" @selected($application->company_supervisor_id === $supervisor->id)>{{ $supervisor->name }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </label>
+                                        @else
+                                            <p class="rounded-lg bg-[#FDF3DC] p-4 text-sm text-[#0D1B2A]">
+                                                PJ perusahaan baru bisa ditugaskan setelah lamaran berstatus diterima.
+                                            </p>
+                                        @endif
                                         <div class="grid gap-3 sm:grid-cols-2">
                                             <label class="block">
                                                 <span class="text-sm font-medium">Mulai</span>
@@ -246,4 +253,19 @@
             @endif
         </aside>
     </div>
+
+    @if (auth()->user()->hasRole('perusahaan'))
+        @component('partials.modal-shell', [
+            'id' => 'offer-update-modal',
+            'title' => 'Ubah lowongan magang',
+            'eyebrow' => 'Perubahan Lowongan',
+            'description' => 'Perbarui detail posisi atau kampus tujuan.',
+            'width' => 'max-w-5xl',
+            'open' => session('open_modal') === 'offer-update-modal' || $errors->any(),
+        ])
+            <form method="POST" action="{{ route('offers.update', $offer) }}">
+                @include('offers._form', ['method' => 'PATCH'])
+            </form>
+        @endcomponent
+    @endif
 @endsection

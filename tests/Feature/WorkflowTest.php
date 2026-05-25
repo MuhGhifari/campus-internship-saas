@@ -13,7 +13,9 @@ use App\Notifications\PlatformUpdateNotification;
 use App\Models\University;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class WorkflowTest extends TestCase
@@ -95,6 +97,7 @@ class WorkflowTest extends TestCase
     public function test_internship_workflow_and_access_rules_are_enforced(): void
     {
         Notification::fake();
+        Storage::fake('public');
 
         $university = University::factory()->create(['nama' => 'Universitas Utama']);
         $otherUniversity = University::factory()->create(['nama' => 'Universitas Lain']);
@@ -148,16 +151,26 @@ class WorkflowTest extends TestCase
             'company_id' => $company->id,
         ]);
 
-        $this->actingAs($companySupervisor)->get(route('partnerships.index'))->assertForbidden();
-        $this->actingAs($lecturer)->get(route('partnerships.index'))->assertForbidden();
+        $this->actingAs($companySupervisor)->get(route('partnerships.index'))
+            ->assertRedirect(route('dashboard'))
+            ->assertSessionHas('warning');
+        $this->actingAs($lecturer)->get(route('partnerships.index'))
+            ->assertRedirect(route('dashboard'))
+            ->assertSessionHas('warning');
 
         $this->actingAs($hr)->post(route('partnerships.store'), [
             'university_id' => $university->id,
             'pesan' => 'Kami ingin membuka program magang resmi.',
-        ])->assertRedirect();
+        ])->assertRedirect(route('partnerships.index'));
 
         $partnership = CompanyPartnership::firstOrFail();
         $this->assertSame('menunggu', $partnership->status);
+        Notification::assertSentTo($staff, PlatformUpdateNotification::class);
+
+        $this->actingAs($staff)->get(route('partnerships.index'))
+            ->assertOk()
+            ->assertSee($company->nama)
+            ->assertSee('Proposal masuk');
 
         $this->actingAs($otherStaff)->patch(route('partnerships.update', $partnership), [
             'status' => 'diterima',
@@ -175,9 +188,12 @@ class WorkflowTest extends TestCase
             'reviewed_by' => $staff->id,
         ]);
 
-        $this->actingAs($staff)->get(route('offers.create'))->assertForbidden();
+        $this->actingAs($staff)->get(route('offers.create'))
+            ->assertRedirect(route('dashboard'))
+            ->assertSessionHas('warning');
         $this->actingAs($staff)->post(route('offers.store'), $this->validOfferPayload($company, [$university->id]))
-            ->assertForbidden();
+            ->assertRedirect(route('dashboard'))
+            ->assertSessionHas('warning');
 
         $this->actingAs($hr)->post(route('offers.store'), $this->validOfferPayload($company, [$university->id]))
             ->assertRedirect();
@@ -204,7 +220,9 @@ class WorkflowTest extends TestCase
         $offer->refresh();
         $this->assertSame('terbit', $offer->status);
 
-        $this->actingAs($otherStaff)->get(route('offers.edit', $offer))->assertForbidden();
+        $this->actingAs($staff)->get(route('offers.show', $offer))
+            ->assertOk()
+            ->assertDontSee('Ubah Lowongan');
 
         $this->actingAs($student)->get(route('offers.index'))
             ->assertOk()
@@ -212,12 +230,18 @@ class WorkflowTest extends TestCase
 
         $this->actingAs($student)->post(route('applications.store', $offer), [
             'motivasi' => 'Saya ingin mengikuti program magang ini karena sesuai dengan rencana karier saya.',
+            'resume' => UploadedFile::fake()->create('cv-nadia.pdf', 120, 'application/pdf'),
+            'surat_pengantar' => UploadedFile::fake()->create('surat-pengantar.pdf', 80, 'application/pdf'),
         ])->assertRedirect(route('applications.index'));
 
         Notification::assertSentTo($hr, PlatformUpdateNotification::class);
 
         $application = InternshipApplication::firstOrFail();
         $this->assertSame('diajukan', $application->status);
+        $this->assertNotNull($application->resume_path);
+        $this->assertNotNull($application->surat_pengantar_path);
+        Storage::disk('public')->assertExists($application->resume_path);
+        Storage::disk('public')->assertExists($application->surat_pengantar_path);
 
         $this->actingAs($student)->post(route('applications.store', $offer), [
             'motivasi' => 'Saya mencoba melamar dua kali untuk memastikan validasi berjalan dengan benar.',
@@ -226,7 +250,7 @@ class WorkflowTest extends TestCase
         $this->assertSame(1, InternshipApplication::count());
 
         $this->actingAs($otherStaff)->patch(route('applications.update', $application), [
-            'status' => 'diterima',
+            'campus_supervisor_id' => $lecturer->id,
         ])->assertForbidden();
 
         $this->actingAs($otherHr)->patch(route('applications.update', $application), [
@@ -244,6 +268,33 @@ class WorkflowTest extends TestCase
         $application->refresh();
         $this->assertSame('diterima', $application->status);
         $this->assertNotNull($application->diterima_pada);
+        $this->assertNull($application->company_supervisor_id);
+
+        $this->actingAs($staff)->patch(route('applications.update', $application), [
+            'campus_supervisor_id' => $lecturer->id,
+        ])->assertRedirect();
+
+        $this->actingAs($hr)->patch(route('applications.update', $application), [
+            'status' => 'diterima',
+            'company_supervisor_id' => $companySupervisor->id,
+            'tanggal_mulai' => now()->addWeek()->toDateString(),
+            'tanggal_selesai' => now()->addMonths(4)->toDateString(),
+        ])->assertRedirect();
+
+        $application->refresh();
+        $this->assertSame($lecturer->id, $application->campus_supervisor_id);
+        $this->assertSame($companySupervisor->id, $application->company_supervisor_id);
+        Notification::assertSentTo($student, PlatformUpdateNotification::class);
+        Notification::assertSentTo($lecturer, PlatformUpdateNotification::class);
+        Notification::assertSentTo($companySupervisor, PlatformUpdateNotification::class);
+
+        $this->actingAs($lecturer)->get(route('evaluations.index'))
+            ->assertOk()
+            ->assertDontSee('Isi Evaluasi');
+
+        $this->actingAs($companySupervisor)->get(route('evaluations.index'))
+            ->assertOk()
+            ->assertSee('Isi Evaluasi');
 
         $pendingOffer = InternshipOffer::factory()->published()->for($company)->create([
             'judul' => 'Pending Logbook Test Offer',
@@ -259,7 +310,8 @@ class WorkflowTest extends TestCase
             'internship_application_id' => $pendingApplication->id,
             'judul_kegiatan' => 'Tugas belum diterima',
             'deskripsi' => 'Tugas ini seharusnya tidak boleh masuk karena lamaran belum diterima.',
-        ])->assertForbidden();
+        ])->assertRedirect(route('dashboard'))
+            ->assertSessionHas('warning');
 
         $this->actingAs($otherCompanySupervisor)->post(route('logbooks.store'), [
             'internship_application_id' => $application->id,
@@ -271,7 +323,8 @@ class WorkflowTest extends TestCase
             'internship_application_id' => $application->id,
             'judul_kegiatan' => 'Mahasiswa mencoba membuat tugas sendiri',
             'deskripsi' => 'Tugas harus dibuat oleh penanggung jawab perusahaan.',
-        ])->assertForbidden();
+        ])->assertRedirect(route('dashboard'))
+            ->assertSessionHas('warning');
 
         $this->actingAs($companySupervisor)->post(route('logbooks.store'), [
             'internship_application_id' => $application->id,
@@ -322,12 +375,18 @@ class WorkflowTest extends TestCase
         ]);
 
         $this->actingAs($lecturer)->post(route('evaluations.store', $application), $this->evaluationPayload('Evaluasi kampus baik.'))
-            ->assertRedirect();
+            ->assertRedirect(route('dashboard'))
+            ->assertSessionHas('warning');
 
         $this->actingAs($companySupervisor)->post(route('evaluations.store', $application), $this->evaluationPayload('Evaluasi perusahaan baik.'))
             ->assertRedirect();
 
-        $this->assertSame(2, Evaluation::count());
+        $this->assertSame(1, Evaluation::count());
+        $this->assertDatabaseHas('evaluations', [
+            'internship_application_id' => $application->id,
+            'evaluator_id' => $companySupervisor->id,
+            'tipe' => 'perusahaan',
+        ]);
 
         $otherOffer = InternshipOffer::factory()->published()->for($otherCompany)->create(['judul' => 'Lowongan Rahasia Kampus Lain']);
         InternshipOfferUniversity::factory()->accepted()->for($otherOffer, 'offer')->for($otherUniversity)->create();

@@ -58,6 +58,21 @@ document.addEventListener('DOMContentLoaded', () => {
         if (trigger) trigger.disabled = select.disabled;
     };
 
+    const positionMenu = (field, menu) => {
+        if (!field || !menu) return;
+
+        field.classList.remove('is-drop-up');
+
+        const fieldRect = field.getBoundingClientRect();
+        const menuHeight = menu.offsetHeight || 280;
+        const spaceBelow = window.innerHeight - fieldRect.bottom;
+        const spaceAbove = fieldRect.top;
+
+        if (spaceBelow < menuHeight + 16 && spaceAbove > spaceBelow) {
+            field.classList.add('is-drop-up');
+        }
+    };
+
     const enhanceSelect = (select) => {
         if (select.dataset.customFieldReady === 'true' || select.multiple) return;
 
@@ -96,7 +111,10 @@ document.addEventListener('DOMContentLoaded', () => {
             option.textContent = nativeOption.textContent.trim();
             option.disabled = nativeOption.disabled;
 
-            option.addEventListener('click', () => {
+            option.addEventListener('click', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+
                 select.value = nativeOption.value;
                 select.dispatchEvent(new Event('change', { bubbles: true }));
                 closeCustomFields();
@@ -111,13 +129,17 @@ document.addEventListener('DOMContentLoaded', () => {
         field.appendChild(trigger);
         field.appendChild(menu);
 
-        trigger.addEventListener('click', () => {
+        trigger.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+
             if (select.disabled) return;
 
             const willOpen = !field.classList.contains('is-open');
             closeCustomFields(field);
             field.classList.toggle('is-open', willOpen);
             trigger.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
+            if (willOpen) positionMenu(field, menu);
         });
 
         select.addEventListener('change', () => syncCustomSelect(select));
@@ -184,7 +206,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 today.getFullYear() === state.year && today.getMonth() === state.month && today.getDate() === date,
             );
 
-            day.addEventListener('click', () => {
+            day.addEventListener('click', (event) => {
+                event.preventDefault();
+                event.stopPropagation();
+
                 input.value = value;
                 input.dispatchEvent(new Event('input', { bubbles: true }));
                 input.dispatchEvent(new Event('change', { bubbles: true }));
@@ -203,6 +228,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (input.dataset.customFieldReady === 'true') return;
 
         input.dataset.customFieldReady = 'true';
+        input.dataset.originalType = 'date';
+        input.type = 'text';
+        input.inputMode = 'none';
         input.classList.add('cb-native-field');
         input.tabIndex = -1;
 
@@ -245,7 +273,10 @@ document.addEventListener('DOMContentLoaded', () => {
         field.appendChild(trigger);
         field.appendChild(menu);
 
-        trigger.addEventListener('click', () => {
+        trigger.addEventListener('click', (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+
             if (input.disabled) return;
 
             const willOpen = !field.classList.contains('is-open');
@@ -253,6 +284,7 @@ document.addEventListener('DOMContentLoaded', () => {
             field.classList.toggle('is-open', willOpen);
             trigger.setAttribute('aria-expanded', willOpen ? 'true' : 'false');
             renderCalendar(input, state);
+            if (willOpen) positionMenu(field, menu);
         });
 
         field.querySelector('[data-custom-date-prev]').addEventListener('click', () => {
@@ -287,7 +319,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.querySelectorAll('select.cb-input').forEach(enhanceSelect);
         document.querySelectorAll('input[type="date"].cb-input').forEach(enhanceDate);
         document.querySelectorAll('select[data-custom-field-ready="true"]').forEach(syncCustomSelect);
-        document.querySelectorAll('input[type="date"][data-custom-field-ready="true"]').forEach((input) => {
+        document.querySelectorAll('input[data-original-type="date"][data-custom-field-ready="true"]').forEach((input) => {
             const selected = getDateParts(input);
             renderCalendar(input, { month: selected.getMonth(), year: selected.getFullYear() });
         });
@@ -305,6 +337,7 @@ document.addEventListener('DOMContentLoaded', () => {
         trigger.addEventListener('click', () => {
             const modal = document.querySelector(trigger.dataset.modalTarget);
             modal?.removeAttribute('hidden');
+            refreshCustomFields();
         });
     });
 

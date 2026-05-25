@@ -77,7 +77,11 @@ class PartnershipController extends Controller
             );
         }
 
-        return back()->with('success', 'Proposal kerja sama berhasil dikirim.');
+        return redirect()
+            ->route('partnerships.index')
+            ->with('success', $user->hasRole('perusahaan')
+                ? 'Proposal kerja sama berhasil dikirim ke staf universitas.'
+                : 'Proposal kerja sama berhasil dikirim ke perusahaan.');
     }
 
     public function update(Request $request, CompanyPartnership $partnership): RedirectResponse

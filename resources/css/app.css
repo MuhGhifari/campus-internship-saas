@@ -168,6 +168,14 @@ input[type='date'].cb-input {
     z-index: 95;
 }
 
+.cb-custom-field.is-drop-up .cb-custom-menu,
+.cb-custom-field.is-drop-up .cb-date-menu {
+    bottom: 100%;
+    margin-bottom: 0.45rem;
+    margin-top: 0;
+    top: auto;
+}
+
 .cb-custom-field.is-open .cb-custom-menu,
 .cb-custom-field.is-open .cb-date-menu {
     display: block;

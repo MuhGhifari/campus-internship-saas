@@ -17,6 +17,7 @@
                     <th class="px-5 py-4 font-semibold">Status</th>
                     <th class="px-5 py-4 font-semibold">Pembimbing</th>
                     <th class="px-5 py-4 font-semibold">Periode</th>
+                    <th class="px-5 py-4 font-semibold">Aksi</th>
                 </tr>
             </thead>
             <tbody class="divide-y divide-[#0D1B2A]/10 bg-white">
@@ -36,13 +37,40 @@
                             <p>Perusahaan: {{ $application->companySupervisor->name ?? '-' }}</p>
                         </td>
                         <td class="px-5 py-4 text-[#6B7E94]">{{ $application->tanggal_mulai?->format('d/m/Y') ?? '-' }} - {{ $application->tanggal_selesai?->format('d/m/Y') ?? '-' }}</td>
+                        <td class="px-5 py-4">
+                            <button type="button" data-modal-target="#campus-supervisor-{{ $application->id }}" class="cb-dark-button px-3 py-2 text-xs">Atur PJ Kampus</button>
+                        </td>
                     </tr>
                 @empty
-                    <tr><td colspan="5" class="px-5 py-10 text-center text-[#6B7E94]">Belum ada lamaran.</td></tr>
+                    <tr><td colspan="6" class="px-5 py-10 text-center text-[#6B7E94]">Belum ada lamaran.</td></tr>
                 @endforelse
             </tbody>
         </table>
     </div>
+
+    @foreach ($applications as $application)
+        @component('partials.modal-shell', [
+            'id' => 'campus-supervisor-'.$application->id,
+            'title' => 'Atur PJ kampus',
+            'eyebrow' => $application->student->name,
+            'description' => $application->offer->judul.' · '.$application->offer->company->nama,
+        ])
+            <form method="POST" action="{{ route('applications.update', $application) }}" class="grid gap-4">
+                @csrf
+                @method('PATCH')
+                <label class="block">
+                    <span class="text-sm font-medium">Pembimbing kampus</span>
+                    <select name="campus_supervisor_id" required class="cb-input mt-2 text-sm">
+                        <option value="">Pilih pembimbing kampus</option>
+                        @foreach ($lecturers as $lecturer)
+                            <option value="{{ $lecturer->id }}" @selected($application->campus_supervisor_id === $lecturer->id)>{{ $lecturer->name }}</option>
+                        @endforeach
+                    </select>
+                </label>
+                <button class="cb-dark-button px-4 py-3 text-sm">Simpan PJ Kampus</button>
+            </form>
+        @endcomponent
+    @endforeach
 
     <div class="mt-6">{{ $applications->links() }}</div>
 @endsection

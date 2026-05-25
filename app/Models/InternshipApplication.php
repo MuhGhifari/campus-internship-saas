@@ -69,4 +69,9 @@ class InternshipApplication extends Model
     {
         return $this->hasOne(Evaluation::class);
     }
+
+    public function companyEvaluation(): HasOne
+    {
+        return $this->hasOne(Evaluation::class)->where('tipe', 'perusahaan');
+    }
 }

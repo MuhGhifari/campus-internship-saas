@@ -59,9 +59,6 @@
             </div>
             <h2 class="mt-5 font-bold text-[#0D1B2A]">Ringkasan alur</h2>
             <p class="mt-2 text-sm leading-6 text-[#6B7E94]">Lowongan ini hanya terlihat oleh mahasiswa kampus yang sudah menyetujui permintaan posisi.</p>
-            @if (auth()->user()->hasRole('perusahaan'))
-                <a href="{{ route('offers.edit', $offer) }}" class="cb-primary mt-5 inline-flex px-5 py-3 text-sm">Ubah Lowongan</a>
-            @endif
         </aside>
     </div>
 
@@ -230,15 +227,16 @@
                         @csrf
                         <label class="block">
                             <span class="text-sm font-semibold text-[#0D1B2A]">Motivasi</span>
-                            <textarea name="motivasi" rows="5" required class="cb-input mt-2">{{ old('motivasi') }}</textarea>
+                            <textarea name="motivasi" rows="5" minlength="20" required class="cb-input mt-2">{{ old('motivasi') }}</textarea>
+                            <span class="mt-2 block text-xs font-medium text-[#6B7E94]">Minimal 20 karakter.</span>
                         </label>
                         <label class="block">
                             <span class="text-sm font-semibold text-[#0D1B2A]">CV</span>
-                            <input name="resume" type="file" class="cb-input mt-2 text-sm">
+                            <input name="resume" type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" class="cb-input mt-2 text-sm">
                         </label>
                         <label class="block">
                             <span class="text-sm font-semibold text-[#0D1B2A]">Surat pengantar</span>
-                            <input name="surat_pengantar" type="file" class="cb-input mt-2 text-sm">
+                            <input name="surat_pengantar" type="file" accept=".pdf,.doc,.docx,.jpg,.jpeg,.png" class="cb-input mt-2 text-sm">
                         </label>
                         <button class="cb-dark-button px-4 py-3 text-sm">Kirim Lamaran</button>
                     </form>

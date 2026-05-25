@@ -39,6 +39,11 @@
         <section class="space-y-4">
             @forelse ($partnerships as $partnership)
                 @php
+                    $isIncoming = (
+                        auth()->user()->hasRole('staf') && $partnership->requester?->hasRole('perusahaan')
+                    ) || (
+                        auth()->user()->hasRole('perusahaan') && $partnership->requester?->hasRole('staf')
+                    );
                     $canReview = $partnership->status === 'menunggu'
                         && $partnership->requested_by !== auth()->id()
                         && (
@@ -55,7 +60,10 @@
                                 <p class="mt-4 text-sm leading-6 text-[#3D526B]">{{ $partnership->pesan }}</p>
                             @endif
                         </div>
-                        <span class="rounded-full bg-[#FDF3DC] px-3 py-1 text-xs font-semibold text-[#0D1B2A]">{{ ucfirst($partnership->status) }}</span>
+                        <div class="flex flex-col items-end gap-2">
+                            <span class="rounded-full bg-[#FDF3DC] px-3 py-1 text-xs font-semibold text-[#0D1B2A]">{{ ucfirst($partnership->status) }}</span>
+                            <span class="rounded-full {{ $isIncoming ? 'bg-[#0D1B2A] text-white' : 'bg-white text-[#6B7E94]' }} px-3 py-1 text-xs font-semibold">{{ $isIncoming ? 'Proposal masuk' : 'Proposal keluar' }}</span>
+                        </div>
                     </div>
 
                     @if ($partnership->catatan_review)

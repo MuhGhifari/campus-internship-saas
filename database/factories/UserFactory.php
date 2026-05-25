@@ -30,6 +30,8 @@ class UserFactory extends Factory
             'name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
             'role' => 'mahasiswa',
+            'university_id' => University::query()->inRandomOrder()->value('id') ?? University::factory(),
+            'company_id' => null,
             'nomor_induk' => fake()->unique()->numerify('##########'),
             'program_studi' => fake()->randomElement(['Teknik Informatika', 'Sistem Informasi', 'Manajemen', 'Desain Komunikasi Visual']),
             'telepon' => fake()->phoneNumber(),

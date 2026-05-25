@@ -28,9 +28,11 @@ class PlatformUpdateNotification extends Notification
 
     public function toMail(object $notifiable): MailMessage
     {
+        $name = $notifiable->name ?? 'Pengguna CareerBridge';
+
         $message = (new MailMessage)
             ->subject($this->title)
-            ->greeting('Halo '.$notifiable->name.',')
+            ->greeting('Halo '.$name.',')
             ->line($this->body);
 
         if ($this->actionUrl) {
